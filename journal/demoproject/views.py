@@ -1,7 +1,9 @@
 from django.http import JsonResponse, HttpResponseRedirect
-from django.core.serializers.json import DjangoJSONEncoder
-from .encoders import PlatoonEncoder, TeacherEncoder
-from .models import Student, Platoon, Teacher, JournalCeil
+
+from .encoders import JournalCeilEncoder, PlatoonEncoder, TeacherEncoder
+from .timetable_service import *
+from .student_services import *
+from .models import *
 import hashlib, logging
 
 logger = logging.getLogger(__name__)
@@ -26,10 +28,44 @@ def getJournalCeils(request, id):
         return JsonResponse({"journal_ceils": None})
     
     ceils = student.journalceil_set.all()
-    return JsonResponse
+    return JsonResponse(ceils, safe=False, encoder=JournalCeilEncoder)
+
+
+def getTimetable(request, id):
+    """Получить расписание для своего взвода"""
+    student = Student.objects.get(id=id)
+    if not student:
+        logger.error(f"student with id {id} doesn't exist")
+        return JsonResponse({"timetable": None})
+
+    timetable = getTimetableForPlatoon(student.platoon.id)
+    if not timetable:
+        logger.error(f"the timetable for platoon {student.platoon.id} is impossible")
+        return JsonResponse({"timetable": None})
+    else:
+        return JsonResponse(timetable)
+
+
+def createStudent(request):
+    """Добавить студента на кафедру"""
+    if request.method == 'POST':
+        try:
+            validated = validateData(request.POST.get('surname'), request.POST.get('name'), request.POST.get('patronymic'), request.POST.get('sex'),
+                                     request.POST.get('platoon'), request.POST.get('military_rank'), request.POST.get('login'), request.POST.get('password'), 
+                                     request.POST.get('department'), request.POST.get('group_number'))
+            addStudent(validated)
+            return JsonResponse({'success': True}) 
+        except Exception:
+            logger.error("The data for student creating is not corrected")
+            return JsonResponse({'success': False, 'message': "The data for student creating is not corrected"})
+            
+
+        
+
+
+
 
      
-    
         
 
 

@@ -46,6 +46,7 @@ class StudentEncoder(DjangoJSONEncoder):
                     'military_post': obj.military_post,
                     'login': obj.login,
                     'password': obj.password,
+                    'department': obj.department,
                     'group_number': obj.group_number,
                     'status': obj.active
                     }
