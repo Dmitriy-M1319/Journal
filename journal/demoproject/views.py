@@ -1,6 +1,6 @@
 from django.http import JsonResponse, HttpResponseRedirect
 
-from .encoders import JournalCeilEncoder, PlatoonEncoder, TeacherEncoder
+from .encoders import *
 from .timetable_service import *
 from .student_services import *
 from .models import *
@@ -88,63 +88,19 @@ def deleteStudent(request, id):
             return JsonResponse({'success': False, 'message': e})
 
 
+# API для преподавателей (без прав особого пользователя)
+
+def getSubjectsForTeacher(request, id):
+    """Получить для преподавателя с идентификатором id список предметов, которые он ведет"""
+    teacher = Teacher.objects.get(id=id)
+    if not teacher:
+        logger.error(f'teacher with id {id} doesn\'t exist')
+        return JsonResponse({'subjects': None, 'message': 'Такого преподавателя не существует в базе'})
+
+    subjects = teacher.subject_set.all()
+    logger.info(f'get subjects for teacher with id {id}')
+    return JsonResponse({'subjects': subjects}, safe=False, encoder=SubjectEncoder)
 
 
-
-     
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Получение всех преподавателей из базы данных
-def teacher_index(request):
-    teachers = Teacher(surname='Рязанов', 
-                       name='Владимир', 
-                       patronymic='Анатольевич', 
-                       military_rank='полковник', 
-                       military_post='начальник кафедры специальной подготовки', 
-                       cycle='цикл', 
-                       login='ryazanov_v_a', 
-                       password='12345678')  
-    return JsonResponse(teachers, safe=False, encoder=TeacherEncoder)
-
-
-# Создание записи преподавателя и сохранение его в базу данных
-def teacher_create(request):
-    if request.method == 'POST':
-        teacher = Teacher()
-        teacher.surname = request.POST.get('surname')
-        teacher.name = request.POST.get('name')
-        teacher.patronymic = request.POST.get('patronymic')
-        teacher.military_rank = request.POST.get('military_rank') 
-        teacher.military_post = request.POST.get('military_post') 
-        teacher.cycle = request.POST.get('cycle') 
-        teacher.login = request.POST.get('login') 
-        #teacher.password = hashlib.md5(request.POST.get('password').encode()).hexdigest()
-        teacher.save()
-    return HttpResponseRedirect("/teachers")
 
 
