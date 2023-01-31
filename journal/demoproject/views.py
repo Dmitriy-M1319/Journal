@@ -91,7 +91,7 @@ def deleteStudent(request, id):
 # API для преподавателей (без прав особого пользователя)
 
 def getSubjectsForTeacher(request, id):
-    """Получить для преподавателя с идентификатором id список предметов, которые он ведет"""
+    """ Получить для преподавателя с идентификатором id список предметов, которые он ведет """
     teacher = Teacher.objects.get(id=id)
     if not teacher:
         logger.error(f'teacher with id {id} doesn\'t exist')
@@ -100,6 +100,60 @@ def getSubjectsForTeacher(request, id):
     subjects = teacher.subject_set.all()
     logger.info(f'get subjects for teacher with id {id}')
     return JsonResponse({'subjects': subjects}, safe=False, encoder=SubjectEncoder)
+
+
+def getSubjectClassesForSubject(request, id):
+    """ Получить все занятия по предмету, который ведет преподаватель """
+    teacher = Teacher.objects.get(id=id)
+    if not teacher:
+        logger.error(f'teacher with id {id} doesn\'t exist')
+        return JsonResponse({'subject_classes': None, 'message': 'Такого преподавателя не существует в базе'})
+
+    subject = teacher.subject_set.filter(id=request.GET.get('subject_id'))
+
+    if not subject:
+        s_id = request.GET.get('subject_id')
+        logger.error(f'subject with id {s_id} doesn\'t exist')
+        return JsonResponse({'subject_classes': None, 'message': 'Такого предмета для данного преподавателя не существует в базе'})
+
+    subject_classes = subject.subject_class_set.all()
+    logger.info(f'get subject classes for teacher with id {id}')
+    return JsonResponse({'subject_classes': subject_classes}, safe=False, encoder=SubjectClassEncoder)
+
+
+def getStudentsByPlatoon(request, id):
+    """ Получить список студентов по номеру взвода, который представлен id """
+    platoon = Platoon.objects.get(platoon_number=id)
+    if not platoon:
+        logger.error(f'platoon with platoon_number {id} does not exist')
+        return JsonResponse({'platoon': None, 'message': 'Взвода с таким номером не существует в базе'})
+
+    students = platoon.student_set.all()
+    logger.info(f'get students from platoon with platoon number {id}')
+    return JsonResponse({'students': students}, safe=False, encoder=StudentEncoder)
+
+
+def createTeacher(request):
+    """ Добавить нового преподавателя """
+    if request.method == 'POST':
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

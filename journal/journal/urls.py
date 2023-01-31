@@ -19,6 +19,5 @@ from demoproject import views
 
 
 urlpatterns = [
-    path('teachers', views.teacher_index),
     #path('admin/', admin.site.urls),
 ]

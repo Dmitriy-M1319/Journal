@@ -63,7 +63,7 @@ class Student(models.Model):
 # Модель предмета
 class Subject(models.Model):
     # Преподаватель (ссылка на преподавателя)
-    teacher = models.OneToOneField(Teacher, on_delete = models.CASCADE)
+    teacher = models.ForeignKey(Teacher, on_delete = models.CASCADE)
     # Название предмета
     name = models.CharField(max_length=100)
     # Количество часов

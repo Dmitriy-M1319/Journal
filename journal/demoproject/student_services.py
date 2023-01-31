@@ -9,7 +9,6 @@ import logging, re
 
 logger = logging.getLogger(__name__)
 
-# За такое меня надо захуярить сразу :)
 def validateData(input_data):
     result = {}
 
