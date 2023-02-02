@@ -6,7 +6,7 @@ import re
 from .models import Teacher
 from django.core.validators import ValidationError
 from django.contrib.auth.hashers import make_password
-from django.db.models.fields import CharField, BooleanField
+from django.db.models.fields import CharField
 
 _fio_regex = r'[А-Я]{1}[а-я]+'
 _login_password_regex = r'^[a-z]+([-_]?[a-z0-9]+){0,2}$'
@@ -22,28 +22,21 @@ def validateTeacherData(input_data):
     """Проверить входящие данные преподавателя на корректность"""
     result = {}
 
-    # Проверка фамилии на корректность
-    match = re.fullmatch(_fio_regex, input_data['surname'])
-    if match:
+    if re.fullmatch(_fio_regex, input_data['surname']):
         result['surname'] = input_data['surname']
     else:
        raise ValidationError("Некорректное значение для фамилии")
 
-    # Проверка имени на корректность
-    match = re.fullmatch(_fio_regex, input_data['name'])
-    if match:
+    if re.fullmatch(_fio_regex, input_data['name']):
         result['name'] = input_data['name']
     else:
        raise ValidationError("Некорректное значение для имени")
 
-    # Проверка отчества на корректность
-    match = re.fullmatch(_fio_regex, input_data['patronymic'])
-    if match:
+    if re.fullmatch(_fio_regex, input_data['patronymic']):
         result['patronymic'] = input_data['patronymic']
     else:
        raise ValidationError("Некорректное значение для отчества")
 
-    # Проверка воинского звания на корректность
     if input_data['military_rank'] in _ranks:
         result['military_rank'] = input_data['military_rank']
     else:
@@ -56,25 +49,24 @@ def validateTeacherData(input_data):
     else:
         result['military_post'] = input_data['military_post']
 
-    # Проверка названия цикла
     if not input_data['cycle'] or input_data['cycle'] == '':
         raise ValidationError("Некорректное значение для воинской должности")
     else:
-        result['military_post'] = input_data['military_post']
+        result['cycle'] = input_data['cycle']
 
-    # Проверка логина на корректность
-    match = re.fullmatch(_login_password_regex, input_data['login'])
-    if match:
+    if not input_data['role'] or input_data['role'] == '':
+        raise ValidationError("Некорректное значение для роли в системе")
+    else:
+        result['role'] = input_data['role']
+
+    if re.fullmatch(_login_password_regex, input_data['login']):
         result['login'] = input_data['login']
     else:
         raise ValidationError("Логин должен содержать только латинские буквы и цифры")
 
-    # Проверка пароля на корректность
     if len(input_data['password']) < 8:
         raise ValidationError("Пароль должен содержать не менее 8 символов")
-
-    match = re.fullmatch(_login_password_regex, input_data['password'])
-    if match:
+    if re.fullmatch(_login_password_regex, input_data['password']):
         result['password'] = input_data['password']
     else:
         raise ValidationError("Пароль должен содержать только латинские буквы и цифры")
@@ -89,6 +81,7 @@ def _insertNewDataToTeacherModel(teacher, data):
     teacher.patronymic = data['patronymic']
     teacher.military_rank = data['military_rank']
     teacher.military_post = data['military_post']
+    teacher.role = data['role']
     teacher.cycle = data['cycle']
     teacher.login = data['login']
     teacher.password = CharField(make_password(data['password']))

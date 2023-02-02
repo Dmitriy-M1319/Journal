@@ -1,5 +1,6 @@
 """Модуль, который будет представлять Json энкодеры для всех моделей базы данных"""
-from .models import *
+from users.models import Platoon, Student, Teacher
+from demoproject.models import *
 from django.core.serializers.json import DjangoJSONEncoder
 from django.core.serializers import serialize
 
