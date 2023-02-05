@@ -20,8 +20,8 @@ class SubjectClass(models.Model):
     subject = models.ForeignKey(Subject, on_delete = models.DO_NOTHING)
     # Взвод, у которого должно быть занятие
     platoon = models.ForeignKey(Platoon, on_delete = models.DO_NOTHING)
-    # Дата занятия
-    date = models.DateField()
+    # Дата и время занятия
+    class_date = models.DateTimeField()
     # Номер темы
     theme_number = models.IntegerField()
     # Название темы

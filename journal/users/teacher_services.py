@@ -88,7 +88,9 @@ def _insertNewDataToTeacherModel(teacher, data):
     return teacher
 
 
-def _getTeacher(teacher_id) -> Teacher:
+def getTeacher(teacher_id) -> Teacher:
+    """ Получить экземпляр преподавателя по его id
+        В случае ошибки выбрасывается исключение Exception """
     teacher = Teacher.objects.get(id=teacher_id)
     if not teacher:
         raise Exception("Такого преподавателя не существует в базе")
@@ -104,14 +106,14 @@ def addNewTeacherToDatabase(validated_data):
 
 def updateExistingTeacher(validated_data, teacher_id):
     """Обновить запись преподавателя с номером teacher_id данными validated_data"""
-    teacher = _getTeacher(teacher_id)
+    teacher = getTeacher(teacher_id)
     teacher = _insertNewDataToTeacherModel(teacher, validated_data)
     teacher.save()
 
 
 def deleteTeacherFromDatabase(teacher_id):
     """ 'Уволить' (программно удалить) преподавателя из базы """
-    teacher = _getTeacher(teacher_id)
+    teacher = getTeacher(teacher_id)
     teacher.status = False
     teacher.save()
 

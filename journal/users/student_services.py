@@ -73,7 +73,7 @@ def validateStudentData(input_data):
     return result
 
 
-def _getStudent(student_id) -> Student:
+def getStudent(student_id) -> Student:
     """Получить экземпляр студента по его номеру student_id
         В случае ошибки выбрасывает исключение Exception"""
     student = Student.objects.get(id=id).first()
@@ -87,7 +87,6 @@ def _getStudent(student_id) -> Student:
 
 def _insertNewDataToStudentModel(new_student, data, active):
     """Заполнить экземпляр студента новыми данными"""
-    new_student = Student()
     new_student.surname = data['surname']
     new_student.name = data['name']
     new_student.patronymic = data['patronymic']
@@ -112,7 +111,7 @@ def addNewStudent(validated_data):
 def updateStudentInDb(validated_data, id):
     """Обновить данные data о студенте с номером id
         В случае ошибки выбрасывает исключение Exception"""
-    student = _getStudent(id)
+    student = getStudent(id)
     student = _insertNewDataToStudentModel(student, validated_data, student.active)
     student.save()
     logger.info("Student was updated successfully")
@@ -120,7 +119,7 @@ def updateStudentInDb(validated_data, id):
 def deleteStudentFromDb(id):
     """ Программно удалить студента с номером id из базы (отчислить с кафедры)
         В случае ошибки выбрасывает исключение Exception"""
-    student = _getStudent(id)
+    student = getStudent(id)
     student.active = CharField('отчислен')
     student.save()
     logger.info("Student was removed successfully")
