@@ -5,6 +5,11 @@ from journal.users.models import Platoon, Teacher
 from django.http import HttpRequest
 from .models import SubjectClass, Subject
 
+import re
+
+
+""" Регулярное выражение для проверки даты и времени из запроса"""
+_datetime_pattern = r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}'
 
 def getPlatoonTimetable(platoon: Platoon, day: date) -> dict:
     """Составить расписание для взвода platoon на определенный день day"""
@@ -112,7 +117,10 @@ def validateSubjectClassData(input_data: dict):
     else:
         result['platoon'] = input_data['platoon']
 
-    # TODO: придумать валидацию и способы передачи данных для даты занятия
+    if re.fullmatch(_datetime_pattern, input_data['class_date']):
+        result["class_date"] = input_data["class_date"]
+    else:
+        raise ValidationError("Некорректные данные для даты и времени занятия")
 
     if input_data["theme_number"].isnumeric() and int(input_data["theme_number"]) > 0:
         result["theme_number"] = input_data["theme_number"]
