@@ -1,7 +1,8 @@
-from datetime import date
+# TODO: Посидеть над логгированием
+from datetime import date, datetime
 
 from django.core.exceptions import ValidationError
-from journal.users.models import Platoon, Teacher
+from users.models import Platoon, Teacher
 from django.http import HttpRequest
 from .models import SubjectClass, Subject
 
@@ -10,6 +11,9 @@ import re
 
 """ Регулярное выражение для проверки даты и времени из запроса"""
 _datetime_pattern = r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}'
+
+""" Регулярное выражение для проверки даты из запроса"""
+_date_pattern = r'\d{4}-\d{2}-\d{2}'
 
 def getPlatoonTimetable(platoon: Platoon, day: date) -> dict:
     """Составить расписание для взвода platoon на определенный день day"""
@@ -20,19 +24,13 @@ def getPlatoonTimetable(platoon: Platoon, day: date) -> dict:
         return classes.values()
         
 
-def _checkRequestDateValue(value: str, request: HttpRequest) -> bool:
-    return request.GET.get(value) != None or request.GET.get(value) != ''
-        
-
-def getDateFromRequest(request: HttpRequest):
+def getDateFromStr(local_date:str):
     """Получить объект date из запроса HttpRequest"""
-    if not _checkRequestDateValue('day', request) or not _checkRequestDateValue('month', request) or not _checkRequestDateValue('year', request):
+    if not re.fullmatch(_date_pattern, local_date):
         raise Exception("Некорректные данные для даты")
     else:
-        year = int(request.GET.get('year'))
-        day = int(request.GET.get('day'))
-        month = int(request.GET.get('month'))
-        return date(year, month, day)
+        date_lst = local_date.split('-')
+        return date(int(date_lst[0]), int(date_lst[1]), int(date_lst[2]))
 
 
 def getSubject(subject_id) -> Subject:
@@ -164,17 +162,24 @@ def getSubjectClass(id):
         return subject_class
 
 
+def getDateAndTimeFromStr(date_time:str):
+    """ Преобразовать дату и время в виде строки в объект datetime """
+    local_datetime = date_time.split('T')
+    local_date = getDateFromStr(local_datetime[0])
+    time_lst = local_datetime[1].split(':')
+    return datetime(local_date.year, local_date.month, local_date.day, int(time_lst[0]), int(time_lst[1]))
+
 def _insertNewDataToSubjectClass(new_class, data):
     """ Внести новые данные в экземпляр занятия """
-    new_class["platoon"] = data["platoon"]
-    new_class["subject"] = data["subject"]
-    new_class["class_date"] = data["class_date"]
-    new_class["theme_number"] = data["theme_number"]
-    new_class["theme_name"] = data["theme_name"]
-    new_class["class_number"] = data["class_number"]
-    new_class["class_name"] = data["class_name"]
-    new_class["class_type"] = data["class_type"]
-    new_class["classroom"] = data["classroom"]
+    new_class.platoon = data["platoon"]
+    new_class.subject = data["subject"]
+    new_class.class_date = getDateAndTimeFromStr(data["class_date"])
+    new_class.theme_numbe = data["theme_number"]
+    new_class.theme_name = data["theme_name"]
+    new_class.class_number = data["class_number"]
+    new_class.class_name = data["class_name"]
+    new_class.class_type = data["class_type"]
+    new_class.classroom = data["classroom"]
     return new_class
 
 
