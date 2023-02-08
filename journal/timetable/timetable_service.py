@@ -1,3 +1,6 @@
+"""
+Модуль, предоставляющий сервисы для работы с расписанием и занятиями
+"""
 # TODO: Посидеть над логгированием
 from datetime import date, datetime
 
@@ -7,7 +10,6 @@ from django.http import HttpRequest
 from .models import SubjectClass, Subject
 
 import re
-
 
 """ Регулярное выражение для проверки даты и времени из запроса"""
 _datetime_pattern = r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}'

@@ -94,6 +94,8 @@ def getTeacher(teacher_id) -> Teacher:
     teacher = Teacher.objects.get(id=teacher_id)
     if not teacher:
         raise Exception("Такого преподавателя не существует в базе")
+    elif not teacher.status:
+        raise Exception("В данный момент этот преподаватель не работает в учебном центре")
     else:
         return teacher
 
