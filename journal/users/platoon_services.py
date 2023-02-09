@@ -6,13 +6,16 @@ import re
 from datetime import date
 
 from django.db.models.fields import IntegerField
+
+from users.teacher_services import getTeacher
 from .models import Platoon, Teacher
 from django.core.validators import ValidationError
 
 def getPlatoonByNumber(platoon_number):
     """ Получить взвод по номеру platoon_number
         В случае неудачи выбрасывается Exception"""
-    platoon = Platoon.objects.get(pk=platoon_number)
+    #TODO: Переписать обработку запроса в try/except
+    platoon = Platoon.objects.get(platoon_number=platoon_number)
     if not platoon:
         raise Exception('Взвода с таким номером не существует в базе')
     else:
@@ -28,11 +31,11 @@ def validateDataForPlatoon(input_data):
     else:
         result['platoon_number'] = input_data['platoon_number']
 
-    tutor = Teacher.objects.get(id=input_data['tutor'])
-    if not tutor:
-        raise ValidationError("Такого преподавателя не существует")
-    else:
+    try:
+        tutor = getTeacher(input_data['tutor'])
         result['tutor'] = input_data['tutor']
+    except:
+        raise ValidationError("Такого преподавателя не существует")
  
     year = date.today().year
     if int(input_data['year']) > year:
@@ -52,8 +55,8 @@ def validateDataForPlatoon(input_data):
 def _insertNewDataIntoPlatoonModel(platoon_model: Platoon, data, status):
     """ Занести в экземпляр взвода новые данные и статус """
     platoon_model.platoon_number = data['platoon_number']
-    platoon_model.tutor = data['tutor']
-    platoon_model.year = IntegerField(data['year'])
+    platoon_model.tutor = Teacher.objects.get(id=data['tutor'])
+    platoon_model.year = int(data['year'])
     platoon_model.status = status
     return platoon_model
 
