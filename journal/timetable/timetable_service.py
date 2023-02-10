@@ -163,6 +163,16 @@ def getSubjectClass(id):
     else:
         return subject_class
 
+def getSubjectClassesBySubject(subject_id):
+    """Получить все занятия по определенному предмету
+    input:
+        subject_id -> id предмета в базе данных
+    output:
+        list(SubjectClass) -> список ячеек
+        Exception -> в случае ошибки"""
+    current_subject = getSubject(subject_id)
+    subject_classes = SubjectClass.objects.filter(subject=current_subject).order_by('id')
+    return subject_classes.values()
 
 def getDateAndTimeFromStr(date_time:str):
     """ Преобразовать дату и время в виде строки в объект datetime """

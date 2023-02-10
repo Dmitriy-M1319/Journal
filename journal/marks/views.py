@@ -7,7 +7,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# TODO: вынести в бизнес-логику журнала
 def getJournalCeils(request, id):
     """Получить оценки студента по всем предметам"""
     student = Student.objects.get(id=id)
@@ -18,22 +17,4 @@ def getJournalCeils(request, id):
     ceils = student.journalceil_set.all()
     logger.info(f'get ceils for student {id}')
     return JsonResponse(ceils, safe=False, encoder=JournalCeilEncoder)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

@@ -8,14 +8,12 @@ class JournalCeil(models.Model):
     # Студент, которому принадлежит клеточка
     student = models.ForeignKey(Student, on_delete = models.DO_NOTHING)
     # Занятие, за которое ставится оценка
-    subject_class = models.OneToOneField(SubjectClass, on_delete = models.DO_NOTHING)
+    subject_class = models.ForeignKey(SubjectClass, on_delete = models.DO_NOTHING)
     # Оценка
     mark = models.IntegerField()
     # Посещаемость (был, неуваж. причина, болен)
     attendance = models.CharField(max_length=10)
     # Оставим место для справки в случае болезни
-
-
 
 
 

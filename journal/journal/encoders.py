@@ -1,6 +1,7 @@
 """Модуль, который будет представлять Json энкодеры для всех моделей базы данных"""
 from users.models import Platoon, Student, Teacher
-from demoproject.models import *
+from timetable.models import Subject, SubjectClass
+from marks.models import JournalCeil
 from django.core.serializers.json import DjangoJSONEncoder
 from django.core.serializers import serialize
 
@@ -74,7 +75,7 @@ class SubjectClassEncoder(DjangoJSONEncoder):
             return {
                     'subject': serialize('json', obj.subject, cls=SubjectEncoder),
                     'platoon': serialize('json', obj.platoon, cls=PlatoonEncoder),
-                    'date': obj.date,
+                    'date': obj.class_date,
                     'theme_number': obj.theme_number,
                     'theme_name': obj.theme_name,
                     'class_number': obj.class_number,

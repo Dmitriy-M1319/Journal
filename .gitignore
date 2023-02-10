@@ -1,4 +1,5 @@
 .venv/*
 journal/db.sqlite3
-journal/*/__pycache__/*
-journal/*/migrations/__pycache__/*
+__pycache__/
+journal/**/__pycache__/
+
