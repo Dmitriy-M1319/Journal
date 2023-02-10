@@ -14,12 +14,11 @@ from django.core.validators import ValidationError
 def getPlatoonByNumber(platoon_number):
     """ Получить взвод по номеру platoon_number
         В случае неудачи выбрасывается Exception"""
-    #TODO: Переписать обработку запроса в try/except
-    platoon = Platoon.objects.get(platoon_number=platoon_number)
-    if not platoon:
-        raise Exception('Взвода с таким номером не существует в базе')
-    else:
+    try:
+        platoon = Platoon.objects.get(platoon_number=platoon_number)
         return platoon
+    except:
+        raise Exception('Взвода с таким номером не существует в базе')
 
 
 def validateDataForPlatoon(input_data):

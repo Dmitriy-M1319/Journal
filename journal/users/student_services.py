@@ -4,6 +4,8 @@
 import logging, re
 from django.core.exceptions import ValidationError
 from django.db.models.fields import CharField
+
+from users.platoon_services import getPlatoonByNumber
 from .models import Student, Platoon
 from django.contrib.auth.hashers import make_password
 
@@ -37,11 +39,11 @@ def validateStudentData(input_data):
     else:
         raise ValidationError("Выберите пол: мужской или женский")
 
-    pl_number = Platoon.objects.get(platoon_number=input_data['platoon'])
-    if not pl_number:
-       raise ValidationError("Указан несуществующий номер взвода")
-    else:
+    try:
+        pl_number = getPlatoonByNumber(input_data['platoon'])
         result['platoon'] = input_data['platoon']
+    except Exception:
+       raise ValidationError("Указан несуществующий номер взвода")
 
     if input_data['military_post'] in _posts:
         result['military_post'] = input_data['military_post']
@@ -76,13 +78,13 @@ def validateStudentData(input_data):
 def getStudent(student_id) -> Student:
     """Получить экземпляр студента по его номеру student_id
         В случае ошибки выбрасывает исключение Exception"""
-    student = Student.objects.get(id=id).first()
-    if not student:
-        raise Exception("Студента с таким идентификатором не существует!")
-    elif student.active == 'отчислен':
-        raise Exception("Студент с таким идентификатором отчислен!")
-    else:
+    try:
+        student = Student.objects.get(id=student_id)
+        if student.active == 'отчислен':
+            raise Exception("Студент с таким идентификатором отчислен!")
         return student
+    except:
+        raise Exception("Студента с таким идентификатором не существует!")
 
 
 def _insertNewDataToStudentModel(new_student, data, active):
@@ -91,9 +93,9 @@ def _insertNewDataToStudentModel(new_student, data, active):
     new_student.name = data['name']
     new_student.patronymic = data['patronymic']
     new_student.sex = data['sex']
-    new_student.platoon = data['platoon']
+    new_student.platoon = getPlatoonByNumber(data['platoon'])
     new_student.military_post = data['military_post']
-    new_student.login = data['military_post']
+    new_student.login = data['login']
     new_student.password = CharField(make_password(data['password']))
     new_student.department = data['department']
     new_student.group_number = data['group_number']
@@ -116,11 +118,12 @@ def updateStudentInDb(validated_data, id):
     student.save()
     logger.info("Student was updated successfully")
 
+
 def deleteStudentFromDb(id):
     """ Программно удалить студента с номером id из базы (отчислить с кафедры)
         В случае ошибки выбрасывает исключение Exception"""
     student = getStudent(id)
-    student.active = CharField('отчислен')
+    student.active = 'отчислен'
     student.save()
     logger.info("Student was removed successfully")
 
