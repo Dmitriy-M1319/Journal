@@ -16,7 +16,22 @@ _posts = frozenset({'студент', 'командир взвода'})
 
 
 def validateStudentData(input_data):
-    """Проверяет данные для студента в списке input_data на корректность""" 
+    """Проверяет данные для студента в списке input_data на корректность
+    input:
+        input_data -> dict с проверяемыми следующими данными:
+            - surname -> str с фамилией
+            - name -> str с именем
+            - patronymic -> str с отчеством
+            - sex -> str с полом студента
+            - platoon -> номер взвода (pk модели Platoon)
+            - military_post -> str с должностью студента во взводе
+            - login -> str с логином студента
+            - password -> str с паролем пользователя
+            - department -> str с факультетом студента в гражданском вузе
+            - group_number -> str с номером группы студента в гражданском вузе
+        output:
+            dict, аналогичный входным данным, в случае успеха
+            ValidationError -> в случае некорректных данных""" 
     result = {}
 
     if re.fullmatch(_fio_regex, input_data['surname']):
@@ -77,7 +92,11 @@ def validateStudentData(input_data):
 
 def getStudent(student_id) -> Student:
     """Получить экземпляр студента по его номеру student_id
-        В случае ошибки выбрасывает исключение Exception"""
+    input:
+        student_id -> идентификатор студента в базе данных
+    output:
+        объект Student в случае успеха
+        Exception в случае ошибки"""
     try:
         student = Student.objects.get(id=student_id)
         if student.active == 'отчислен':
@@ -104,7 +123,19 @@ def _insertNewDataToStudentModel(new_student, data, active):
 
 
 def addNewStudent(validated_data):
-    """Добавить нового студента с данными validated_data в базу"""
+    """Добавить нового студента с данными validated_data в базу
+    input:
+        validated_data -> dict с данными студента после валидации:
+            - surname -> str с фамилией
+            - name -> str с именем
+            - patronymic -> str с отчеством
+            - sex -> str с полом студента
+            - platoon -> номер взвода (pk модели Platoon)
+            - military_post -> str с должностью студента во взводе
+            - login -> str с логином студента
+            - password -> str с паролем пользователя
+            - department -> str с факультетом студента в гражданском вузе
+            - group_number -> str с номером группы студента в гражданском вузе"""
     new_student = _insertNewDataToStudentModel(Student(), validated_data, 'учится')
     new_student.save()
     logger.info("New student was created successfully")
@@ -112,7 +143,21 @@ def addNewStudent(validated_data):
 
 def updateStudentInDb(validated_data, id):
     """Обновить данные data о студенте с номером id
-        В случае ошибки выбрасывает исключение Exception"""
+     input:
+        validated_data -> dict с данными студента после валидации:
+            - surname -> str с фамилией
+            - name -> str с именем
+            - patronymic -> str с отчеством
+            - sex -> str с полом студента
+            - platoon -> номер взвода (pk модели Platoon)
+            - military_post -> str с должностью студента во взводе
+            - login -> str с логином студента
+            - password -> str с паролем пользователя
+            - department -> str с факультетом студента в гражданском вузе
+            - group_number -> str с номером группы студента в гражданском вузе
+        id -> идентификатор студента в базе данных
+    output:
+        Exception -> в случае ошибки поиска студента"""
     student = getStudent(id)
     student = _insertNewDataToStudentModel(student, validated_data, student.active)
     student.save()
@@ -121,7 +166,10 @@ def updateStudentInDb(validated_data, id):
 
 def deleteStudentFromDb(id):
     """ Программно удалить студента с номером id из базы (отчислить с кафедры)
-        В случае ошибки выбрасывает исключение Exception"""
+    input:
+        id -> идентификатор студента в базе данных
+    output:
+        Exception -> в случае ошибки поиска студента"""
     student = getStudent(id)
     student.active = 'отчислен'
     student.save()

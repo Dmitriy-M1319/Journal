@@ -19,7 +19,21 @@ _ranks = frozenset({'лейтенант',
 
 
 def validateTeacherData(input_data):
-    """Проверить входящие данные преподавателя на корректность"""
+    """Проверяет данные для преподавателя в списке input_data на корректность
+    input:
+        input_data -> dict с проверяющими следующими данными:
+            - surname -> str с фамилией
+            - name -> str с именем
+            - patronymic -> str с отчеством
+            - military_rank -> str с воинским званием преподавателя
+            - military_post -> str с воинской должностью преподавателя на кафедре
+            - cycle -> str с названием цикла на кафедре
+            - role -> str с числовым значением роли преподавателя в системе
+            - login -> str с логином пользователя
+            - password -> str с паролем пользователя
+        output:
+            dict, аналогичный входным данным, в случае успеха
+            ValidationError -> в случае некорректных данных"""
     result = {}
 
     if re.fullmatch(_fio_regex, input_data['surname']):
@@ -50,10 +64,11 @@ def validateTeacherData(input_data):
         result['military_post'] = input_data['military_post']
 
     if not input_data['cycle'] or input_data['cycle'] == '':
-        raise ValidationError("Некорректное значение для воинской должности")
+        raise ValidationError("Некорректное значение для названия цикла")
     else:
         result['cycle'] = input_data['cycle']
 
+    #TODO: Сделать валидацию роли на основе числового значения 0 и 1
     if not input_data['role'] or input_data['role'] == '':
         raise ValidationError("Некорректное значение для роли в системе")
     else:
@@ -89,8 +104,12 @@ def _insertNewDataToTeacherModel(teacher, data):
 
 
 def getTeacher(teacher_id) -> Teacher:
-    """ Получить экземпляр преподавателя по его id
-        В случае ошибки выбрасывается исключение Exception """
+    """Получить экземпляр преподавателя по его id
+    input:
+        teacher_id -> идентификатор pk преподавателя в базе данных
+    output:
+        объект Teacher -> в случае успеха
+        Exception -> в случае ошибки"""
     teacher = Teacher.objects.get(id=teacher_id)
     if not teacher:
         raise Exception("Такого преподавателя не существует в базе")
@@ -99,22 +118,52 @@ def getTeacher(teacher_id) -> Teacher:
     else:
         return teacher
 
+
 def addNewTeacherToDatabase(validated_data):
-    """Добавить нового преподавателя с данными из validated_data в базу"""
+    """Добавить нового преподавателя с данными из validated_data в базу
+    input:
+        validated_data -> dict с данными преподавателя после валидации:
+            - surname -> str с фамилией
+            - name -> str с именем
+            - patronymic -> str с отчеством
+            - military_rank -> str с воинским званием преподавателя
+            - military_post -> str с воинской должностью преподавателя на кафедре
+            - cycle -> str с названием цикла на кафедре
+            - role -> str с числовым значением роли преподавателя в системе
+            - login -> str с логином пользователя
+            - password -> str с паролем пользователя"""
     new_teacher = _insertNewDataToTeacherModel(Teacher(), validated_data)
     new_teacher.status = True
     new_teacher.save()
      
 
 def updateExistingTeacher(validated_data, teacher_id):
-    """Обновить запись преподавателя с номером teacher_id данными validated_data"""
+    """Обновить запись преподавателя с номером teacher_id данными validated_data
+    input:
+        validated_data -> dict с данными преподавателя после валидации:
+            - surname -> str с фамилией
+            - name -> str с именем
+            - patronymic -> str с отчеством
+            - military_rank -> str с воинским званием преподавателя
+            - military_post -> str с воинской должностью преподавателя на кафедре
+            - cycle -> str с названием цикла на кафедре
+            - role -> str с числовым значением роли преподавателя в системе
+            - login -> str с логином пользователя
+            - password -> str с паролем пользователя
+        teacher_id -> идентификатор преподавателя в базе данных
+    output:
+        Exception -> в случае ошибки"""
     teacher = getTeacher(teacher_id)
     teacher = _insertNewDataToTeacherModel(teacher, validated_data)
     teacher.save()
 
 
 def deleteTeacherFromDatabase(teacher_id):
-    """ 'Уволить' (программно удалить) преподавателя из базы """
+    """ 'Уволить' (программно удалить) преподавателя из базы
+    input:
+        teacher_id -> идентификатор преподавателя в базе данных
+    output:
+        Exception -> в случае ошибки"""
     teacher = getTeacher(teacher_id)
     teacher.status = False
     teacher.save()
