@@ -68,11 +68,10 @@ def validateTeacherData(input_data):
     else:
         result['cycle'] = input_data['cycle']
 
-    #TODO: Сделать валидацию роли на основе числового значения 0 и 1
-    if not input_data['role'] or input_data['role'] == '':
-        raise ValidationError("Некорректное значение для роли в системе")
-    else:
+    if input_data['role'].isdigit() and input_data['role'] in (0, 1):
         result['role'] = input_data['role']
+    else:
+        raise ValidationError("Некорректное значение для роли в системе")
 
     if re.fullmatch(_login_password_regex, input_data['login']):
         result['login'] = input_data['login']

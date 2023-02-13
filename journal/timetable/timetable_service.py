@@ -2,19 +2,15 @@
 Модуль, предоставляющий сервисы для работы с расписанием и занятиями
 """
 # TODO: Посидеть над логгированием
+import re
 from datetime import date, datetime
-
 from django.core.exceptions import ValidationError
 from users.models import Platoon, Teacher
 from django.http import HttpRequest
 from .models import SubjectClass, Subject
 
-import re
-
-""" Регулярное выражение для проверки даты и времени из запроса"""
+_subject_forms = ['экзамен', 'зачет']
 _datetime_pattern = r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}'
-
-""" Регулярное выражение для проверки даты из запроса"""
 _date_pattern = r'\d{4}-\d{2}-\d{2}'
 
 def getPlatoonTimetable(platoon: Platoon, day: date) -> dict:
@@ -71,12 +67,11 @@ def validateSubjectData(input_data):
         dict, аналогичный input_data -> в случае успеха валидации
         ValidationError -> в случае ошибки"""
     result = dict()
-    #TODO: Сделать обработку преподавателя через getTeacher и try/except
-    teacher = Teacher.objects.get(id=input_data["teacher"])
-    if not teacher:
-        raise ValidationError("Некорректно указан преподаватель")
-    else:
+    try:
+        teacher = Teacher.objects.get(id=input_data["teacher"])
         result["teacher"] = input_data["teacher"]
+    except Exception as e:
+        raise ValidationError("Некорректно указан преподаватель")
     
     if not input_data["name"] or input_data["name"] == '':
         raise ValidationError("Некорректные данные для названия предмета")
@@ -88,11 +83,10 @@ def validateSubjectData(input_data):
     else:
         raise ValidationError("Некорректные данные для количества часов")
 
-    # TODO: Уточнить главные формы предметов, только экзамен или зачет или еще какие-то есть
-    if not input_data["form"] or input_data["form"] == '':
-        raise ValidationError("Некорректные данные для формы")
-    else:
+    if input_data['form'] in _subject_forms:
         result["form"] = input_data["form"]
+    else:
+        raise ValidationError("Некорректные данные для формы")
     return result
 
 
