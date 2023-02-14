@@ -11,7 +11,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 @baseView
-def getTimetableForPlatoonInDay(request, id):
+def getTimetableForPlatoonInDayView(request, id):
     """Получить расписание для своего взвода на определенный день"""
     platoon = getPlatoonByNumber(id)
     class_day = getDateFromStr(request.GET.get('day'))
@@ -20,7 +20,7 @@ def getTimetableForPlatoonInDay(request, id):
 
 
 @baseView
-def getSubjectsForTeacher(request, id):
+def getSubjectsForTeacherView(request, id):
     """ Получить для преподавателя с идентификатором id список предметов, которые он ведет """
     teacher = getTeacher(id)
     subjects = teacher.subject_set.all()
@@ -29,7 +29,7 @@ def getSubjectsForTeacher(request, id):
 
 
 @baseView
-def getSubjectClassesForTeacher(request, id):
+def getSubjectClassesForTeacherView(request, id):
     """ Получить все занятия по предмету с номером subject_id, который ведет преподаватель с идентификатором id """
     teacher = getTeacher(id) 
     subject = getSubject(request.GET.get('subject_id'))
@@ -44,28 +44,25 @@ def getSubjectClassesForTeacher(request, id):
 def _getValidatedDataForSubjectFromRequest(request):
     data = {'teacher': request.POST.get('teacher'), 'name': request.POST.get('name'), 'hours': request.POST.get('hours'),
                 'teacher': request.POST.get('teacher'), 'form': request.POST.get('form')}
-    validated_data = validateSubjectData(data)
-    return validated_data
+    return validateSubjectData(data)
 
 
 @baseView
-def addSubject(request):
+def createSubjectView(request):
     if request.method == 'POST':
-        validated_data = _getValidatedDataForSubjectFromRequest(request)
-        addSubjectToDb(validated_data)
+        addSubjectToDb(_getValidatedDataForSubjectFromRequest(request))
         return JsonResponse({'success': True})
 
 
 @baseView
-def updateSubject(request, id):
+def updateSubjectView(request, id):
     if request.method == 'POST':
-        validated_data = _getValidatedDataForSubjectFromRequest(request)
-        updateSubjectInDb(validated_data, id)
+        updateSubjectInDb(_getValidatedDataForSubjectFromRequest(request), id)
         return JsonResponse({'success': True})
 
 
 @baseView
-def deleteSubject(request, id):
+def deleteSubjectView(request, id):
     if request.method == 'POST':
         deleteSubjectFromDb(id)
         return JsonResponse({'success': True})
@@ -75,28 +72,25 @@ def _getDataForSubjectClassFromRequest(request):
     data = {'subject': request.POST.get('subject'), 'platoon': request.POST.get('platoon'), 'class_date': request.POST.get('class_date'),
             'theme_number': request.POST.get('theme_number'),'theme_name': request.POST.get('theme_name'), 'class_number': request.POST.get('class_number'),
             'class_name': request.POST.get('class_name'), 'class_type': request.POST.get('class_type'), 'classroom': request.POST.get('classroom')}
-    validated_data = validateSubjectData(data)
-    return validated_data
+    return validateSubjectData(data)
 
 
 @baseView
-def addSubjectClass(request):
+def createSubjectClassView(request):
     if request.method == 'POST':
-        validated_data = _getDataForSubjectClassFromRequest(request)
-        addSubjectClassToDb(validated_data)
+        addSubjectClassToDb(_getDataForSubjectClassFromRequest(request))
         return JsonResponse({'success': True})
 
 
 @baseView
-def updateSubjectClass(request, id):
+def updateSubjectClassView(request, id):
     if request.method == 'POST':
-        validated_data = _getDataForSubjectClassFromRequest(request)
-        updateSubjectClassInDb(validated_data, id)
+        updateSubjectClassInDb(_getDataForSubjectClassFromRequest(request), id)
         return JsonResponse({'success': True})
 
 
 @baseView
-def deleteSubjectClass(request, id):
+def deleteSubjectClassView(request, id):
     if request.method == 'POST':
         deleteSubjectClassFromDb(id)
         return JsonResponse({'success': True})

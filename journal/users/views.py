@@ -1,7 +1,7 @@
 from django.http import JsonResponse
 from journal.encoders import *
 from journal.base_view import baseView
-from users.platoon_services import addNewPlatoon, deletePlatoonWithGraduation, getPlatoonByNumber, validateDataForPlatoon
+from users.platoon_services import addNewPlatoon, deletePlatoonWithGraduation, getPlatoonByNumber, updateExistingPlatoon, validateDataForPlatoon
 from .teacher_services import addNewTeacherToDatabase, deleteTeacherFromDatabase, updateExistingTeacher, validateTeacherData
 from .student_services import *
 from .models import *
@@ -20,31 +20,26 @@ def _getValidatedStudentData(request):
 
 
 @baseView
-def createStudent(request):
+def createStudentView(request):
     """Добавить студента на кафедру"""
     if request.method == 'POST':
-        data = _getValidatedStudentData(request)
-        validateStudentData(data)
-        addNewStudent(data)
+        addNewStudent(_getValidatedStudentData(request))
         return JsonResponse({'success': True}) 
             
 
 @baseView
-def updateStudent(request, id):
+def updateStudentView(request, id):
     """Обновить данные студента на кафедре"""
     if request.method == 'POST':
-        data = _getValidatedStudentData(request)
-        validateStudentData(data)
-        updateStudentInDb(data, id)
+        updateStudentInDb(_getValidatedStudentData(request), id)
         return JsonResponse({'success': True}) 
 
 
 @baseView
-def deleteStudent(request, id):
+def deleteStudentView(request, id):
     """ 'Отчислить' студента с кафедры """
     if request.method == 'POST':
         deleteStudentFromDb(id)
-        logger.info(f'student with id {id} was removed succesfully')
         return JsonResponse({'success': True}) 
 
 
@@ -56,60 +51,51 @@ def _getValidatedTeacherData(request):
 
 
 @baseView
-def createTeacher(request):
+def createTeacherView(request):
     """Веб-сервис, предоставляющий занесение приглашенного преподавателя в базу"""
     if request.method == 'POST':
-        data = _getValidatedTeacherData(request)
-        validateTeacherData(data)
-        addNewTeacherToDatabase(data)
+        addNewTeacherToDatabase(_getValidatedTeacherData(request))
         return JsonResponse({'success': True}) 
 
 
 @baseView
-def updateTeacher(request, id):
+def updateTeacherView(request, id):
     """Веб-сервис, предоставляющий обновление информации о преподавателе"""
     if request.method == 'POST':
-        data = _getValidatedTeacherData(request)
-        validateTeacherData(data)
-        updateExistingTeacher(data, id)
+        updateExistingTeacher(_getValidatedTeacherData(request), id)
         return JsonResponse({'success': True}) 
 
 
 @baseView
-def deleteTeacher(request, id):
+def deleteTeacherView(request, id):
     """Веб-сервис, предоставляющий увольнение преподавателей с кафедры"""
     if request.method == 'POST':
         deleteTeacherFromDatabase(id)
-        logger.info(f'teacher with id {id} was removed succesfully')
         return JsonResponse({'success': True}) 
 
 
 @baseView
-def getPlatoonByStudent(request, id):
+def getPlatoonByStudentView(request, id):
     """Получить объект взвода, в котором находится студент с номером id"""
     platoon = getStudent(id).platoon
-    logger.info(f"get correct platoon for student with id {id}")
     return JsonResponse(platoon, safe=False, encoder=PlatoonEncoder)
 
 
 @baseView
-def getStudentsByPlatoon(request, id):
+def getStudentsByPlatoonView(request, id):
     """ Получить список студентов по номеру взвода, который представлен id """
     platoon = getPlatoonByNumber(id)
     students = platoon.student_set.all()
-    logger.info(f'get students from platoon with platoon number {id}')
     return JsonResponse({'students': students}, safe=False, encoder=StudentEncoder)
 
 
 @baseView
-def getPlatoonTutor(request, id):
+def getPlatoonTutorView(request, id):
     """Получение куратора взвода с номером id"""
     platoon = getPlatoonByNumber(id)
     tutor = platoon.tutor
     if not tutor:
-        logger.error(f'platoon with platoon_number {id} does not have a tutor')
         return JsonResponse({'tutor': None, 'message': 'У данного взвода нет куратора'})
-    logger.info(f'get tutor of platoon with platoon number {id}')
     return JsonResponse({'tutor': tutor}, safe=False, encoder=TeacherEncoder)
 
 
@@ -120,31 +106,24 @@ def _getValidatedPlatoonData(request):
 
 
 @baseView
-def createPlatoon(request):
+def createPlatoonView(request):
     """Добавление нового взвода на кафедру"""
     if request.method == 'POST':
         addNewPlatoon(_getValidatedPlatoonData(request))
-        platoon_number = request.POST.get('platoon_number')
-        logger.info(f'create a new platoon with platoon number {platoon_number}')
         return JsonResponse({'success': True}) 
 
 
 @baseView
-def updatePlatoon(request, id):
+def updatePlatoonView(request, id):
     """Обновление данных существующего взвода на кафедре"""
     if request.method == 'POST':
-        data = {'platoon_number': request.POST.get('platoon_number'), 'tutor': request.POST.get('tutor'), 'year': request.POST.get('year'),
-                'status': request.POST.get('status')}
-        result = validateDataForPlatoon(data)
-        updatePlatoon(result, id)
-        logger.info(f'update a platoon with platoon number {id}')
+        updateExistingPlatoon(_getValidatedPlatoonData(request), id)
         return JsonResponse({'success': True}) 
 
 
 @baseView
-def deletePlatoon(request, id):
+def deletePlatoonView(request, id):
     """ 'Выпуск' взвода с кафедры """
     if request.method == 'POST':
         deletePlatoonWithGraduation(id)
-        logger.info(f'delete a platoon with platoon number {id}')
         return JsonResponse({'success': True})

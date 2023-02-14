@@ -23,6 +23,18 @@ def getPlatoonByNumber(platoon_number):
         raise Exception('Взвода с таким номером не существует в базе')
 
 
+def getAllPlatoons():
+    """ Получить все взводы на кафедре
+    output:
+        list: Platoon -> список объектов взвода"""
+    return Platoon.objects.all().values()
+
+
+def getStudentsByPlatoonFromDb(platoon_number):
+    platoon = getPlatoonByNumber(platoon_number)
+    return platoon.student_set.all()
+
+
 def validateDataForPlatoon(input_data):
     """ Проверяет корректность входных данных для взвода
     input:
