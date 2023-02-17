@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 @baseView
 def getTimetableForPlatoonInDayView(request, id):
     """Получить расписание для своего взвода на определенный день"""
+    logger.info('GET: get timetable for platoon')
     platoon = getPlatoonByNumber(id)
     class_day = getDateFromStr(request.GET.get('day'))
     timetable = getPlatoonTimetable(platoon, class_day)
@@ -22,6 +23,7 @@ def getTimetableForPlatoonInDayView(request, id):
 @baseView
 def getSubjectsForTeacherView(request, id):
     """ Получить для преподавателя с идентификатором id список предметов, которые он ведет """
+    logger.info('GET: get subject list for teacher')
     teacher = getTeacher(id)
     subjects = teacher.subject_set.all()
     logger.info(f'get subjects for teacher with id {id}')
@@ -31,6 +33,7 @@ def getSubjectsForTeacherView(request, id):
 @baseView
 def getSubjectClassesForTeacherView(request, id):
     """ Получить все занятия по предмету с номером subject_id, который ведет преподаватель с идентификатором id """
+    logger.info('GET: get subject class list for teacher')
     teacher = getTeacher(id) 
     subject = getSubject(request.GET.get('subject_id'))
     if not teacher.subject_set.filter(name=subject.name):
@@ -50,6 +53,7 @@ def _getValidatedDataForSubjectFromRequest(request):
 @baseView
 def createSubjectView(request):
     if request.method == 'POST':
+        logger.info('POST: create new subject')
         addSubjectToDb(_getValidatedDataForSubjectFromRequest(request))
         return JsonResponse({'success': True})
 
@@ -57,6 +61,7 @@ def createSubjectView(request):
 @baseView
 def updateSubjectView(request, id):
     if request.method == 'POST':
+        logger.info('POST: update existing subject with id {id}')
         updateSubjectInDb(_getValidatedDataForSubjectFromRequest(request), id)
         return JsonResponse({'success': True})
 
@@ -64,6 +69,7 @@ def updateSubjectView(request, id):
 @baseView
 def deleteSubjectView(request, id):
     if request.method == 'POST':
+        logger.info('POST: remove existing subject with id {id}')
         deleteSubjectFromDb(id)
         return JsonResponse({'success': True})
 
@@ -78,6 +84,7 @@ def _getDataForSubjectClassFromRequest(request):
 @baseView
 def createSubjectClassView(request):
     if request.method == 'POST':
+        logger.info('POST: create new subject class')
         addSubjectClassToDb(_getDataForSubjectClassFromRequest(request))
         return JsonResponse({'success': True})
 
@@ -85,6 +92,7 @@ def createSubjectClassView(request):
 @baseView
 def updateSubjectClassView(request, id):
     if request.method == 'POST':
+        logger.info('POST: update existing subject class with id {id}')
         updateSubjectClassInDb(_getDataForSubjectClassFromRequest(request), id)
         return JsonResponse({'success': True})
 
@@ -92,6 +100,7 @@ def updateSubjectClassView(request, id):
 @baseView
 def deleteSubjectClassView(request, id):
     if request.method == 'POST':
+        logger.info('POST: remove existing subject class with id {id}')
         deleteSubjectClassFromDb(id)
         return JsonResponse({'success': True})
 

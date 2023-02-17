@@ -3,11 +3,14 @@
 """
 
 import re
+import logging
 from datetime import date
 
 from users.teacher_services import getTeacher
 from .models import Platoon, Teacher
 from django.core.validators import ValidationError
+
+logger = logging.getLogger(__name__)
 
 def getPlatoonByNumber(platoon_number):
     """ Получить взвод по номеру platoon_number
@@ -20,6 +23,7 @@ def getPlatoonByNumber(platoon_number):
         platoon = Platoon.objects.get(platoon_number=platoon_number)
         return platoon
     except:
+        logger.error(f'get platoon with platoon_number {platoon_number}: failed')
         raise Exception('Взвода с таким номером не существует в базе')
 
 
@@ -48,6 +52,7 @@ def validateDataForPlatoon(input_data):
         ValidationError -> в случае некорректных данных"""
     result = dict()
     if not input_data['platoon_number'] or input_data['platoon_number'] == '' or not input_data['platoon_number'].isnumeric():
+        logger.error('platoon_number field has invalid data for validation')
         raise ValidationError("Некорректные данные для номера взвода")
     else:
         result['platoon_number'] = input_data['platoon_number']
@@ -56,10 +61,12 @@ def validateDataForPlatoon(input_data):
         tutor = getTeacher(input_data['tutor'])
         result['tutor'] = input_data['tutor']
     except:
+        logger.error('tutor field has invalid data for validation')
         raise ValidationError("Такого преподавателя не существует")
  
     year = date.today().year
     if int(input_data['year']) > year:
+        logger.error('year field has invalid data for validation')
         raise ValidationError('Некорректное значение для года набора')
     else:
         result['year'] = input_data['year']
@@ -68,6 +75,7 @@ def validateDataForPlatoon(input_data):
     if re.fullmatch(r'учится|выпустился', input_data['status']):
         result['status'] = input_data['status']
     else:
+        logger.error('status field has invalid data for validation')
         raise ValidationError('Некорректное значение для статуса взвода')
 
     return result
@@ -92,6 +100,7 @@ def addNewPlatoon(validated_data: dict):
             - status -> статус нахождения взвода на кафедре"""
     platoon = _insertNewDataIntoPlatoonModel(Platoon(), validated_data, 'учится')
     platoon.save()
+    logger.info('save new platoon to database')
 
 
 def updateExistingPlatoon(validated_data, platoon_number):
@@ -106,6 +115,7 @@ def updateExistingPlatoon(validated_data, platoon_number):
     platoon = getPlatoonByNumber(platoon_number)
     platoon = _insertNewDataIntoPlatoonModel(platoon, validated_data, platoon.status)
     platoon.save() 
+    logger.info(f'update platoon with number {platoon_number} in database')
 
 
 def deletePlatoonWithGraduation(platoon_number):
@@ -115,4 +125,5 @@ def deletePlatoonWithGraduation(platoon_number):
     platoon = getPlatoonByNumber(platoon_number)
     platoon.status = 'выпустился'
     platoon.save()
+    logger.info(f'delette platoon with number {platoon_number}')
 

@@ -37,47 +37,57 @@ def validateStudentData(input_data):
     if re.fullmatch(_fio_regex, input_data['surname']):
         result['surname'] = input_data['surname']
     else:
-       raise ValidationError("Некорректное значение для фамилии")
+        logger.error('student: surname field has invalid data for validation')
+        raise ValidationError("Некорректное значение для фамилии")
 
     if re.fullmatch(_fio_regex, input_data['name']):
         result['name'] = input_data['name']
     else:
-       raise ValidationError("Некорректное значение для имени")
+        logger.error('student: name field has invalid data for validation')
+        raise ValidationError("Некорректное значение для имени")
 
     if re.fullmatch(_fio_regex, input_data['patronymic']):
         result['patronymic'] = input_data['patronymic']
     else:
-       raise ValidationError("Некорректное значение для отчества")
+        logger.error('student: patronymic field has invalid data for validation')
+        raise ValidationError("Некорректное значение для отчества")
 
     if re.fullmatch(r'мужской|женский', input_data['sex']):
         result['sex'] = input_data['sex']
     else:
+        logger.error('student: sex field has invalid data for validation')
         raise ValidationError("Выберите пол: мужской или женский")
 
     try:
         pl_number = getPlatoonByNumber(input_data['platoon'])
         result['platoon'] = input_data['platoon']
     except Exception:
-       raise ValidationError("Указан несуществующий номер взвода")
+        logger.error('student: platoon field has invalid data for validation')
+        raise ValidationError("Указан несуществующий номер взвода")
 
     if input_data['military_post'] in _posts:
         result['military_post'] = input_data['military_post']
     else:
+        logger.error('student: military_post field has invalid data for validation')
         raise ValidationError("Некорректное значение для должности")
 
     if re.fullmatch(_login_password_regex, input_data['login']):
         result['login'] = input_data['login']
     else:
+        logger.error('student: login field has invalid data for validation')
         raise ValidationError("Логин должен содержать только латинские буквы и цифры")
 
     if len(input_data['password']) < 8:
+        logger.error('student: password field has incorrected length for validation')
         raise ValidationError("Пароль должен содержать не менее 8 символов")
     if re.fullmatch(_login_password_regex, input_data['password']):
         result['password'] = input_data['password']
     else:
+        logger.error('student: password field has invalid data for validation')
         raise ValidationError("Пароль должен содержать только латинские буквы и цифры")
 
     if not input_data['department']:
+        logger.error('student: department field has invalid data for validation')
         raise ValidationError("Пустое название факультета")
     else:
         result['department'] = input_data['department']
@@ -85,6 +95,7 @@ def validateStudentData(input_data):
     if re.fullmatch(r'\d', input_data['group_number']):
         result['group_number'] = input_data['group_number']
     else:
+        logger.error('student: group_number field has invalid data for validation')
         raise ValidationError("Некорректное значение для номера группы")
 
     return result
@@ -103,6 +114,7 @@ def getStudent(student_id) -> Student:
             raise Exception("Студент с таким идентификатором отчислен!")
         return student
     except:
+        logger.info(f'student with id {student_id} does not exist')
         raise Exception("Студента с таким идентификатором не существует!")
 
 
@@ -138,7 +150,7 @@ def addNewStudent(validated_data):
             - group_number -> str с номером группы студента в гражданском вузе"""
     new_student = _insertNewDataToStudentModel(Student(), validated_data, 'учится')
     new_student.save()
-    logger.info("New student was created successfully")
+    logger.info("create new student in database")
 
 
 def updateStudentInDb(validated_data, id):
@@ -161,7 +173,7 @@ def updateStudentInDb(validated_data, id):
     student = getStudent(id)
     student = _insertNewDataToStudentModel(student, validated_data, student.active)
     student.save()
-    logger.info("Student was updated successfully")
+    logger.info("update existing student with id {id} in database")
 
 
 def deleteStudentFromDb(id):
@@ -173,7 +185,7 @@ def deleteStudentFromDb(id):
     student = getStudent(id)
     student.active = 'отчислен'
     student.save()
-    logger.info("Student was removed successfully")
+    logger.info("remove existing student with id {id} in database")
 
 
 
