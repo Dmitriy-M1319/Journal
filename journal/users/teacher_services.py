@@ -75,7 +75,7 @@ def validateTeacherData(input_data):
     else:
         result['cycle'] = input_data['cycle']
 
-    if input_data['role'].isdigit() and input_data['role'] in (0, 1):
+    if input_data['role'] in (0, 1):
         result['role'] = input_data['role']
     else:
         logger.error('teacher: role field has invalid data for validation')
@@ -109,7 +109,7 @@ def _insertNewDataToTeacherModel(teacher, data):
     teacher.role = data['role']
     teacher.cycle = data['cycle']
     teacher.login = data['login']
-    teacher.password = CharField(make_password(data['password']))
+    teacher.password = make_password(data['password'])
     return teacher
 
 
@@ -122,7 +122,7 @@ def getTeacher(teacher_id) -> Teacher:
         Exception -> в случае ошибки"""
     try:
         teacher = Teacher.objects.get(id=teacher_id)
-        if not teacher.status:
+        if teacher.status == 'уволен':
             raise Exception("В данный момент этот преподаватель не работает в учебном центре")
         return teacher
     except Exception:
@@ -143,7 +143,7 @@ def addNewTeacherToDatabase(validated_data):
             - login -> str с логином пользователя
             - password -> str с паролем пользователя"""
     new_teacher = _insertNewDataToTeacherModel(Teacher(), validated_data)
-    new_teacher.status = True
+    new_teacher.status = 'работает'
     new_teacher.save()
     logger.info('create new teacher in database')
      
@@ -177,7 +177,7 @@ def deleteTeacherFromDatabase(teacher_id):
     output:
         Exception -> в случае ошибки"""
     teacher = getTeacher(teacher_id)
-    teacher.status = False
+    teacher.status = 'уволен'
     teacher.save()
     logger.info(f'remove existing teacher with id {teacher_id} in database')
 

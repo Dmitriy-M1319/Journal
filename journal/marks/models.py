@@ -15,5 +15,8 @@ class JournalCeil(models.Model):
     attendance = models.CharField(max_length=10)
     # Оставим место для справки в случае болезни
 
+    class Meta:
+        db_table = 'journal_ceils'
+
 
 

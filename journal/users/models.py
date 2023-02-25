@@ -24,7 +24,23 @@ class Teacher(models.Model):
     # Пароль (в хэшированном виде)
     password = models.CharField(max_length=255)
     # Статус преподавателя (работает или уволен)
-    status = models.BooleanField()
+    status = models.CharField(max_length=30)
+
+    class Meta:
+        db_table = 'teachers'
+
+    def json(self):
+        return {'surname': self.surname, 
+                    'name': self.name,
+                    'patronymic': self.patronymic,
+                    'military_rank': self.military_rank,
+                    'military_post': self.military_post,
+                    'cycle': self.cycle,
+                    'login': self.login,
+                    'password': self.password,
+                    'status': self.status
+                    }
+
 
 class Platoon(models.Model):
     """Модель взвода на кафедре"""
@@ -37,6 +53,14 @@ class Platoon(models.Model):
     # Статус взвода (учится или выпустился)
     status = models.CharField(max_length=15)
 
+    class Meta:
+        db_table = 'platoons'
+
+    def json(self):
+        return {'number': self.platoon_number,
+                    'year': self.year,
+                    'tutor': self.tutor.json()
+                    }
 
 class Student(models.Model):
     """Модель студента на кафедре"""
@@ -63,4 +87,20 @@ class Student(models.Model):
     # Статус студента (учится, выпустился или отчислен)
     active = models.CharField(max_length=30)
 
+    class Meta:
+        db_table = 'students'
+
+    def json(self):
+        return {'surname': self.surname, 
+                    'name': self.name,
+                    'patronymic': self.patronymic,
+                    'sex': self.sex,
+                    'platoon': self.platoon.json(),
+                    'military_post': self.military_post,
+                    'login': self.login,
+                    'password': self.password,
+                    'department': self.department,
+                    'group_number': self.group_number,
+                    'status': self.active
+                    }
 

@@ -1,3 +1,4 @@
+from django.core.serializers.json import json
 from django.http import JsonResponse
 from journal.base_view import baseView
 from users.models import *
@@ -5,13 +6,14 @@ from .timetable_service import *
 from users.platoon_services import getPlatoonByNumber
 from users.teacher_services import getTeacher
 from journal.encoders import SubjectClassEncoder, SubjectEncoder
+from django.views.decorators.csrf import ensure_csrf_cookie
 
 import logging
 
 logger = logging.getLogger(__name__)
 
 @baseView
-def getTimetableForPlatoonInDayView(request, id):
+def getTimetableForPlatoonInDayView(request, id): # не работает фильтр по времени
     """Получить расписание для своего взвода на определенный день"""
     logger.info('GET: get timetable for platoon')
     platoon = getPlatoonByNumber(id)
@@ -21,17 +23,17 @@ def getTimetableForPlatoonInDayView(request, id):
 
 
 @baseView
-def getSubjectsForTeacherView(request, id):
+def getSubjectsForTeacherView(request, id): # работает
     """ Получить для преподавателя с идентификатором id список предметов, которые он ведет """
     logger.info('GET: get subject list for teacher')
     teacher = getTeacher(id)
     subjects = teacher.subject_set.all()
     logger.info(f'get subjects for teacher with id {id}')
-    return JsonResponse({'subjects': subjects}, safe=False, encoder=SubjectEncoder)
+    return JsonResponse(convertSubjectsToJson(subjects), safe=False, encoder=SubjectEncoder)
 
 
 @baseView
-def getSubjectClassesForTeacherView(request, id):
+def getSubjectClassesForTeacherView(request, id): # работает
     """ Получить все занятия по предмету с номером subject_id, который ведет преподаватель с идентификатором id """
     logger.info('GET: get subject class list for teacher')
     teacher = getTeacher(id) 
@@ -39,34 +41,32 @@ def getSubjectClassesForTeacherView(request, id):
     if not teacher.subject_set.filter(name=subject.name):
         return JsonResponse({'subject_classes': None, 'message': 'Данный предмет не ведется преподавателем'})
 
-    subject_classes = subject.subject_class_set.all()
+    subject_classes = subject.subjectclass_set.all()
     logger.info(f'get subject classes for teacher with id {id}')
-    return JsonResponse({'subject_classes': subject_classes}, safe=False, encoder=SubjectClassEncoder)
+    return JsonResponse(convertSubjectClassesToJson(subject_classes), safe=False, encoder=SubjectClassEncoder)
 
-
-def _getValidatedDataForSubjectFromRequest(request):
-    data = {'teacher': request.POST.get('teacher'), 'name': request.POST.get('name'), 'hours': request.POST.get('hours'),
-                'teacher': request.POST.get('teacher'), 'form': request.POST.get('form')}
-    return validateSubjectData(data)
 
 
 @baseView
+@ensure_csrf_cookie
 def createSubjectView(request):
     if request.method == 'POST':
         logger.info('POST: create new subject')
-        addSubjectToDb(_getValidatedDataForSubjectFromRequest(request))
+        addSubjectToDb(validateSubjectData(json.loads(request.body)))
         return JsonResponse({'success': True})
 
 
 @baseView
+@ensure_csrf_cookie
 def updateSubjectView(request, id):
     if request.method == 'POST':
         logger.info('POST: update existing subject with id {id}')
-        updateSubjectInDb(_getValidatedDataForSubjectFromRequest(request), id)
+        updateSubjectInDb(validateSubjectData(json.loads(request.body)), id)
         return JsonResponse({'success': True})
 
 
 @baseView
+@ensure_csrf_cookie
 def deleteSubjectView(request, id):
     if request.method == 'POST':
         logger.info('POST: remove existing subject with id {id}')
@@ -74,30 +74,26 @@ def deleteSubjectView(request, id):
         return JsonResponse({'success': True})
 
 
-def _getDataForSubjectClassFromRequest(request):
-    data = {'subject': request.POST.get('subject'), 'platoon': request.POST.get('platoon'), 'class_date': request.POST.get('class_date'),
-            'theme_number': request.POST.get('theme_number'),'theme_name': request.POST.get('theme_name'), 'class_number': request.POST.get('class_number'),
-            'class_name': request.POST.get('class_name'), 'class_type': request.POST.get('class_type'), 'classroom': request.POST.get('classroom')}
-    return validateSubjectData(data)
-
-
 @baseView
+@ensure_csrf_cookie
 def createSubjectClassView(request):
     if request.method == 'POST':
         logger.info('POST: create new subject class')
-        addSubjectClassToDb(_getDataForSubjectClassFromRequest(request))
+        addSubjectClassToDb(validateSubjectClassData(json.loads(request.body)))
         return JsonResponse({'success': True})
 
 
 @baseView
+@ensure_csrf_cookie
 def updateSubjectClassView(request, id):
     if request.method == 'POST':
         logger.info('POST: update existing subject class with id {id}')
-        updateSubjectClassInDb(_getDataForSubjectClassFromRequest(request), id)
+        updateSubjectClassInDb(validateSubjectClassData(json.loads(request.body)), id)
         return JsonResponse({'success': True})
 
 
 @baseView
+@ensure_csrf_cookie
 def deleteSubjectClassView(request, id):
     if request.method == 'POST':
         logger.info('POST: remove existing subject class with id {id}')

@@ -15,6 +15,18 @@ _login_password_regex = r'^[a-z]+([-_]?[a-z0-9]+){0,2}$'
 _posts = frozenset({'студент', 'командир взвода'})
 
 
+def convertStudentsToJson(students):
+    """Переводит список студентов в виде QuerySet в JSON нотацию
+    input:
+        students -> список типа QuerySet
+    output:
+        students в виде json"""
+    student_arr = list()
+    for student in students:
+        student_arr.append(student.json())
+    return {'students': student_arr}
+
+
 def validateStudentData(input_data):
     """Проверяет данные для студента в списке input_data на корректность
     input:

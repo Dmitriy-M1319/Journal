@@ -16,7 +16,7 @@ class TeacherEncoder(DjangoJSONEncoder):
                     'military_rank': obj.military_rank,
                     'military_post': obj.military_post,
                     'cycle': obj.cycle,
-                    'login': obj.cycle,
+                    'login': obj.login,
                     'password': obj.password,
                     'status': obj.status
                     }
@@ -30,7 +30,7 @@ class PlatoonEncoder(DjangoJSONEncoder):
             return {
                     'number': obj.platoon_number,
                     'year': obj.year,
-                    'tutor': serialize('json', obj.tutor, cls=TeacherEncoder)
+                    'tutor': obj.tutor.json()
                     }
         return super().default(obj)
 
@@ -44,7 +44,7 @@ class StudentEncoder(DjangoJSONEncoder):
                     'name': obj.name,
                     'patronymic': obj.patronymic,
                     'sex': obj.sex,
-                    'platoon': serialize('json', obj.platoon, cls=PlatoonEncoder),
+                    'platoon': obj.platoon.json(),
                     'military_post': obj.military_post,
                     'login': obj.login,
                     'password': obj.password,
@@ -60,7 +60,7 @@ class SubjectEncoder(DjangoJSONEncoder):
     def default(self, obj):
         if isinstance(obj, Subject):
             return {
-                    'teacher': serialize('json', obj.teacher, cls=TeacherEncoder),
+                    'teacher': obj.teacher.json(),
                     'name': obj.name,
                     'hours_count': obj.hours_count,
                     'form': obj.form
@@ -73,8 +73,8 @@ class SubjectClassEncoder(DjangoJSONEncoder):
     def default(self, obj):
         if isinstance(obj, SubjectClass):
             return {
-                    'subject': serialize('json', obj.subject, cls=SubjectEncoder),
-                    'platoon': serialize('json', obj.platoon, cls=PlatoonEncoder),
+                    'subject': obj.subject.json(),
+                    'platoon': obj.platoon.json(),
                     'date': obj.class_date,
                     'theme_number': obj.theme_number,
                     'theme_name': obj.theme_name,
@@ -91,8 +91,8 @@ class JournalCeilEncoder(DjangoJSONEncoder):
     def default(self, obj):
         if isinstance(obj, JournalCeil):
             return {
-                    'student': serialize('json', obj.student, cls=StudentEncoder),
-                    'subject_class': serialize('json', obj.subject_class, cls=SubjectClassEncoder),
+                    'student': obj.student.json(),
+                    'subject_class': obj.subject_class.json(),
                     'mark': obj.mark,
                     'attendance': obj.attendance
                     }

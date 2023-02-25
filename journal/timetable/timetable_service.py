@@ -13,18 +13,38 @@ _subject_forms = ['экзамен', 'зачет']
 _datetime_pattern = r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}'
 _date_pattern = r'\d{4}-\d{2}-\d{2}'
 
-def getPlatoonTimetable(platoon: Platoon, day: date) -> dict:
+
+def convertSubjectsToJson(subjects):
+    result = list()
+    for subject in subjects:
+        result.append(subject.json())
+    return {'subjects': result}
+
+
+def convertSubjectClassesToJson(subject_classes):
+    result = list()
+    for subject_class in subject_classes:
+        result.append(subject_class.json())
+    return {'subject_classes': result}
+
+
+def getPlatoonTimetable(platoon: Platoon, day):
     """Составить расписание для взвода platoon на определенный день day
     input:
         platoon -> объект взвода Platoon
         day -> date с определенным днем в году
     output:
         list с объектами SubjectClass в качестве расписания"""
-    classes = platoon.subject_class_set().filter(class_date__date==day).order_by('date')
+    for cl in platoon.subjectclass_set.all(): # вот это сравнение работает корректно
+        print(cl.class_date.date() == day)
+
+    classes = platoon.subjectclass_set.filter(class_date__day=day.day,
+                                              class_date__month=day.month,
+                                              class_date__year=day.year).order_by('class_date') # а вот это не работает
     if not classes:
         raise Exception("У данного взвода нет занятий в этот день")
     else:
-        return classes.values()
+        return convertSubjectClassesToJson(classes)
         
 
 def getDateFromStr(local_date:str):

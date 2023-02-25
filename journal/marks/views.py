@@ -1,7 +1,9 @@
 import logging
 
 from django.http import JsonResponse
+from django.http.response import json
 from journal.base_view import baseView
+from django.views.decorators.csrf import ensure_csrf_cookie
 from marks.marks_services import addNewJournalCeil, deleteJournalCeilFromDb, getJournalCeilsBySubject, getJournalCeilsForStudent, updateExistingJournalCeil, validateMarkData
 
 from journal.encoders import *
@@ -23,28 +25,26 @@ def getCeilsBySubjectView(request, id):
     return JsonResponse(ceils, safe=False, encoder=JournalCeilEncoder)
 
 
-def _getValidatedJournalCeilData(request):
-    data = {'student': request.POST.get('student'), 'subject_class': request.POST.get('subject_class'),
-            'mark': request.POST.get('mark'), 'attendance': request.POST.get('attendance')}
-    return validateMarkData(data)
-
-
 @baseView
+@ensure_csrf_cookie
 def createCeilView(request):
     """Веб-сервис, предоставляющий создание новой оценки"""
     if request.method == 'POST':
-        addNewJournalCeil(_getValidatedJournalCeilData(request))
+        addNewJournalCeil(validateMarkData(json.loads(request.body)))
         return JsonResponse({'success': True})
 
 
 @baseView
+@ensure_csrf_cookie
 def updateCeilView(request, id):
     """Веб-сервис, предоставляющий обновление существующей оценки"""
     if request.method == 'POST':
-        updateExistingJournalCeil(_getValidatedJournalCeilData(request), id)
+        updateExistingJournalCeil(validateMarkData(json.loads(request.body)), id)
         return JsonResponse({'success': True})
 
 
+@baseView
+@ensure_csrf_cookie
 def deleteCeilView(request, id):
     """Веб-сервис, предоставляющий удаление существующей оценки"""
     if request.method == 'POST':

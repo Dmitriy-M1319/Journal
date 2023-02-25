@@ -1,10 +1,12 @@
 import logging
+from django.core.serializers.json import json
 
 from django.http import JsonResponse
+from django.views.decorators.csrf import ensure_csrf_cookie
 from journal.encoders import *
 from journal.base_view import baseView
 from .platoon_services import addNewPlatoon, deletePlatoonWithGraduation, getPlatoonByNumber, updateExistingPlatoon, validateDataForPlatoon
-from .teacher_services import addNewTeacherToDatabase, deleteTeacherFromDatabase, updateExistingTeacher, validateTeacherData
+from .teacher_services import addNewTeacherToDatabase, deleteTeacherFromDatabase, getTeacher, updateExistingTeacher, validateTeacherData
 from .student_services import *
 from .models import *
 
@@ -12,12 +14,11 @@ from .models import *
 logger = logging.getLogger(__name__)
 
 
-def _getValidatedStudentData(request):
-    data = {'surname': request.POST.get('surname'), 'name': request.POST.get('name'), 'patronymic': request.POST.get('patronymic'),
-            'sex': request.POST.get('sex'), 'military_post': request.POST.get('military_post'), 'platoon': request.POST.get('platoon'),
-            'login': request.POST.get('login'), 'password': request.POST.get('password'), 'department': request.POST.get('department'),
-            'group_number': request.POST.get('group_number')}
-    return validateStudentData(data)
+@baseView
+def getStudentByIdView(request, id):
+    """Веб-сервис, предоставляющий получение студента по его id"""
+    student = getStudent(id)
+    return JsonResponse(student, safe=False, encoder=StudentEncoder)
 
 
 @baseView
@@ -25,7 +26,7 @@ def createStudentView(request):
     """Добавить студента на кафедру"""
     if request.method == 'POST':
         logger.info("POST: create new student")
-        addNewStudent(_getValidatedStudentData(request))
+        addNewStudent(validateStudentData(json.loads(request.body)))
         return JsonResponse({'success': True}) 
             
 
@@ -34,7 +35,7 @@ def updateStudentView(request, id):
     """Обновить данные студента на кафедре"""
     if request.method == 'POST':
         logger.info("POST: update existing student")
-        updateStudentInDb(_getValidatedStudentData(request), id)
+        updateStudentInDb(validateStudentData(json.loads(request.body)), id)
         return JsonResponse({'success': True}) 
 
 
@@ -47,38 +48,51 @@ def deleteStudentView(request, id):
         return JsonResponse({'success': True}) 
 
 
-def _getValidatedTeacherData(request):
-    data = {'surname': request.POST.get('surname'), 'name': request.POST.get('name'), 'patronymic': request.POST.get('patronymic'),
-            'military_post': request.POST.get('military_post'), 'military_rank': request.POST.get('military_rank'), 'cycle': request.POST.get('cycle'),
-            'role': request.POST.get('role'), 'login': request.POST.get('login'), 'password': request.POST.get('password')}
-    return validateTeacherData(data)
+@baseView
+def getTeacherByIdView(request, id):
+    """Веб-сервис, предоставляющий получение студента по его id"""
+    teacher = getTeacher(id)
+    return JsonResponse(teacher, safe=False, encoder=TeacherEncoder)
 
 
 @baseView
+@ensure_csrf_cookie
 def createTeacherView(request):
     """Веб-сервис, предоставляющий занесение приглашенного преподавателя в базу"""
     if request.method == 'POST':
         logger.info("POST: create new teacher")
-        addNewTeacherToDatabase(_getValidatedTeacherData(request))
-        return JsonResponse({'success': True}) 
+        body = request.body
+        body_json = json.loads(body)
+        addNewTeacherToDatabase(validateTeacherData(body_json))
+        return JsonResponse({'body': body_json, 'Success': True}) 
 
 
 @baseView
+@ensure_csrf_cookie
 def updateTeacherView(request, id):
     """Веб-сервис, предоставляющий обновление информации о преподавателе"""
     if request.method == 'POST':
         logger.info("POST: update existing teacher")
-        updateExistingTeacher(_getValidatedTeacherData(request), id)
+        body = request.body
+        body_json = json.loads(body)
+        updateExistingTeacher(validateTeacherData(body_json), id)
         return JsonResponse({'success': True}) 
 
 
 @baseView
+@ensure_csrf_cookie
 def deleteTeacherView(request, id):
     """Веб-сервис, предоставляющий увольнение преподавателей с кафедры"""
     if request.method == 'POST':
         logger.info("POST: remove existing teacher")
         deleteTeacherFromDatabase(id)
         return JsonResponse({'success': True}) 
+
+
+@baseView
+def getPlatoonByNumberView(request, id):
+    platoon = getPlatoonByNumber(id)
+    return JsonResponse(platoon, safe=False, encoder=PlatoonEncoder)
 
 
 @baseView
@@ -95,7 +109,7 @@ def getStudentsByPlatoonView(request, id):
     logger.info('GET: get list of students from platoon')
     platoon = getPlatoonByNumber(id)
     students = platoon.student_set.all()
-    return JsonResponse({'students': students}, safe=False, encoder=StudentEncoder)
+    return JsonResponse(convertStudentsToJson(students), safe=False, encoder=StudentEncoder)
 
 
 @baseView
@@ -109,18 +123,13 @@ def getPlatoonTutorView(request, id):
     return JsonResponse({'tutor': tutor}, safe=False, encoder=TeacherEncoder)
 
 
-def _getValidatedPlatoonData(request):
-    data = {'platoon_number': request.POST.get('platoon_number'), 'tutor': request.POST.get('tutor'), 'year': request.POST.get('year'),
-            'status': request.POST.get('status')}
-    return validateDataForPlatoon(data)
-
 
 @baseView
 def createPlatoonView(request):
     """Веб-сервис, предоставляющий добавление нового взвода на кафедру"""
     if request.method == 'POST':
         logger.info('POST: create new platoon')
-        addNewPlatoon(_getValidatedPlatoonData(request))
+        addNewPlatoon(validateDataForPlatoon(json.loads(request.body)))
         return JsonResponse({'success': True}) 
 
 
@@ -129,7 +138,7 @@ def updatePlatoonView(request, id):
     """Веб-сервис, предоставляющий обновление данных существующего взвода на кафедре"""
     if request.method == 'POST':
         logger.info('POST: update existing platoon')
-        updateExistingPlatoon(_getValidatedPlatoonData(request), id)
+        updateExistingPlatoon(validateDataForPlatoon(json.loads(request.body)), id)
         return JsonResponse({'success': True}) 
 
 
