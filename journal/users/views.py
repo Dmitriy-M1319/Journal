@@ -1,6 +1,6 @@
 import logging
 from django.core.serializers.json import json
-
+from django.contrib.auth import authenticate
 from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
 from journal.encoders import *
@@ -13,6 +13,26 @@ from .models import *
 
 logger = logging.getLogger(__name__)
 
+
+@baseView
+def loginView(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        user = authenticate(username=data['login'], password=data['password'])
+        if not user:
+            return JsonResponse({'error': 'Не удалось войти: возможно, неверные логин или пароль'})
+        else:
+            return JsonResponse(user.json())
+
+@baseView
+def getAuthUserView(request):
+    user = get_teacher(request.user.id)
+    if user.role == "TEACHER":
+        encoder = TeacherEncoder
+    else:
+        encoder = StudentEncoder
+    return JsonResponse(user, safe=False, encoder=encoder)
+        
 
 @baseView
 def getStudentByIdView(request, id):

@@ -13,12 +13,11 @@ class TeacherEncoder(DjangoJSONEncoder):
             return {'surname': obj.surname, 
                     'name': obj.name,
                     'patronymic': obj.patronymic,
-                    'military_rank': obj.military_rank,
+                    'military_rank': obj.teacherprofile.military_rank,
                     'military_post': obj.military_post,
-                    'cycle': obj.cycle,
-                    'login': obj.login,
-                    'password': obj.password,
-                    'status': obj.status
+                    'cycle': obj.teacherprofile.cycle,
+                    'login': obj.username,
+                    'status': obj.teacherprofile.status
                     }
         return super().default(obj)
 
@@ -43,14 +42,13 @@ class StudentEncoder(DjangoJSONEncoder):
                     'surname': obj.surname, 
                     'name': obj.name,
                     'patronymic': obj.patronymic,
-                    'sex': obj.sex,
-                    'platoon': obj.platoon.json(),
+                    'sex': obj.studentprofile.sex,
+                    'platoon': obj.studentprofile.platoon.json(),
                     'military_post': obj.military_post,
-                    'login': obj.login,
-                    'password': obj.password,
-                    'department': obj.department,
-                    'group_number': obj.group_number,
-                    'status': obj.active
+                    'login': obj.username,
+                    'department': obj.studentprofile.department,
+                    'group_number': obj.studentprofile.group_number,
+                    'status': obj.studentprofile.active
                     }
         return super().default(obj)
 

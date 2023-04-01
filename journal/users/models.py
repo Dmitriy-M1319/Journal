@@ -24,6 +24,8 @@ class CustomUser(AbstractUser):
     military_post = models.CharField(max_length=255)
     base_role = Role.ADMIN
     role = models.CharField(null=True, max_length=50, choices=Role.choices)
+
+    REQUIRED_FIELDS = []
     def json(self):
         if self.role == 'TEACHER':
             return self.teacherprofile.json()

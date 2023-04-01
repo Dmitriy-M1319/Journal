@@ -15,12 +15,14 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from users.views import createTeacherView, deleteTeacherView, getPlatoonByNumberView, getPlatoonByStudentView, getPlatoonTutorView, getStudentByIdView, getStudentsByPlatoonView, getTeacherByIdView, updateTeacherView
+from users.views import *
 from timetable.views import *
 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('login/', loginView),
+    path('authuser/get', getAuthUserView),
     path('student/<int:id>', getStudentByIdView),
     path('teacher/<int:id>', getTeacherByIdView),
     path('teacher/<int:id>/update', updateTeacherView),
