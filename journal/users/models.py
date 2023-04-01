@@ -2,42 +2,80 @@
     Модели пользователей в веб-приложении электронного журнала
 """
 from django.db import models
+from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.db.models.fields import proxy
 
-class Teacher(models.Model):
-    """Модель преподавателя на кафедре"""
+
+class CustomUser(AbstractUser):
+    """Модель с общими данными для студента и преподавателя для авторизации"""
+    class Role(models.TextChoices):
+        ADMIN = "ADMIN", "Admin"
+        STUDENT = "STUDENT", "Student"
+        TEACHER = "TEACHER", "Teacher"
     # Фамилия
     surname = models.CharField(max_length=40)
-    # Имя 
+    # Имя
     name = models.CharField(max_length=40)
     # Отчество
     patronymic = models.CharField(max_length=40)
-    # Воинское звание
-    military_rank = models.CharField(max_length=20)
     # Воинская должность
     military_post = models.CharField(max_length=255)
+    base_role = Role.ADMIN
+    role = models.CharField(null=True, max_length=50, choices=Role.choices)
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            self.role = self.base_role
+            return super().save(*args, **kwargs)
+
+
+class StudentManager(BaseUserManager):
+    def get_queryset(self, *args, **kwargs):
+        results = super().get_queryset(*args, **kwargs)
+        return results.filter(role=CustomUser.Role.STUDENT)
+
+
+class Student(CustomUser):
+    """Модель студента для авторизации"""
+    base_role = CustomUser.Role.STUDENT
+    student = StudentManager()
+    class Meta:
+        proxy = True
+
+
+class TeacherManager(BaseUserManager):
+    def get_queryset(self, *args, **kwargs):
+        results = super().get_queryset(*args, **kwargs)
+        return results.filter(role=CustomUser.Role.TEACHER)
+
+
+class Teacher(CustomUser):
+    """Модель преподавателя на кафедре для авторизации"""
+    base_role = CustomUser.Role.TEACHER
+    teacher = TeacherManager()
+    class Meta:
+        proxy = True
+
+
+class TeacherProfile(models.Model):
+    """Модель профиля преподавателя на кафедре"""
+    user = models.OneToOneField(CustomUser, on_delete=models.DO_NOTHING)
+    # Воинское звание
+    military_rank = models.CharField(max_length=20)
     # Цикл
     cycle = models.CharField(max_length=255)
     # Роль в системе (обычный преподаватель или суперпользователь)
-    role = models.IntegerField()
-    # Логин в учетной системе
-    login = models.CharField(max_length=30)
-    # Пароль (в хэшированном виде)
-    password = models.CharField(max_length=255)
+    teacher_role = models.IntegerField()
     # Статус преподавателя (работает или уволен)
     status = models.CharField(max_length=30)
 
-    class Meta:
-        db_table = 'teachers'
-
     def json(self):
-        return {'surname': self.surname, 
-                    'name': self.name,
-                    'patronymic': self.patronymic,
+        return {'surname': self.user.surname, 
+                    'name': self.user.name,
+                    'patronymic': self.user.patronymic,
                     'military_rank': self.military_rank,
-                    'military_post': self.military_post,
+                    'military_post': self.user.military_post,
                     'cycle': self.cycle,
-                    'login': self.login,
-                    'password': self.password,
+                    'login': self.user.username,
                     'status': self.status
                     }
 
@@ -62,24 +100,14 @@ class Platoon(models.Model):
                     'tutor': self.tutor.json()
                     }
 
-class Student(models.Model):
-    """Модель студента на кафедре"""
-    # Фамилия
-    surname = models.CharField(max_length=40)
-    # Имя 
-    name = models.CharField(max_length=40)
-    # Отчество
-    patronymic = models.CharField(max_length=40)
+
+class StudentProfile(models.Model):
+    """Модель профиля студента на кафедре"""
+    user = models.OneToOneField(CustomUser, on_delete=models.DO_NOTHING)
     # Пол
     sex = models.CharField(max_length=10)
     # Номер взвода (ссылка на взвод)
     platoon = models.ForeignKey(Platoon, on_delete = models.DO_NOTHING)
-    # Должность во взводе
-    military_post = models.CharField(max_length=255)
-    # Логин в учетной системе
-    login = models.CharField(max_length=30)
-    # Пароль (в хэшированном виде)
-    password = models.CharField(max_length=255)
     # Факультет в гражданском вузе
     department = models.CharField(max_length=255)
     # Номер группы на факультете
@@ -87,18 +115,14 @@ class Student(models.Model):
     # Статус студента (учится, выпустился или отчислен)
     active = models.CharField(max_length=30)
 
-    class Meta:
-        db_table = 'students'
-
     def json(self):
-        return {'surname': self.surname, 
-                    'name': self.name,
-                    'patronymic': self.patronymic,
+        return {'surname': self.user.surname, 
+                    'name': self.user.name,
+                    'patronymic': self.user.patronymic,
                     'sex': self.sex,
                     'platoon': self.platoon.json(),
-                    'military_post': self.military_post,
-                    'login': self.login,
-                    'password': self.password,
+                    'military_post': self.user.military_post,
+                    'login': self.user.login,
                     'department': self.department,
                     'group_number': self.group_number,
                     'status': self.active

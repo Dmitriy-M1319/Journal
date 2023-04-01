@@ -6,13 +6,13 @@ import re
 import logging
 from datetime import date
 
-from users.teacher_services import getTeacher
+from users.teacher_services import get_teacher
 from .models import Platoon, Teacher
 from django.core.validators import ValidationError
 
 logger = logging.getLogger(__name__)
 
-def getPlatoonByNumber(platoon_number):
+def get_platoon_by_number(platoon_number):
     """ Получить взвод по номеру platoon_number
     input:
         platoon_number -> номер взвода
@@ -27,19 +27,19 @@ def getPlatoonByNumber(platoon_number):
         raise Exception('Взвода с таким номером не существует в базе')
 
 
-def getAllPlatoons():
+def get_all_platoons():
     """ Получить все взводы на кафедре
     output:
         list: Platoon -> список объектов взвода"""
     return Platoon.objects.all().values()
 
 
-def getStudentsByPlatoonFromDb(platoon_number):
-    platoon = getPlatoonByNumber(platoon_number)
+def get_students_by_platoon(platoon_number):
+    platoon = get_platoon_by_number(platoon_number)
     return platoon.student_set.all()
 
 
-def validateDataForPlatoon(input_data):
+def validate_platoon_data(input_data):
     """ Проверяет корректность входных данных для взвода
     input:
         input_data -> dict со следующими ключами:
@@ -58,7 +58,7 @@ def validateDataForPlatoon(input_data):
         result['platoon_number'] = input_data['platoon_number']
 
     try:
-        tutor = getTeacher(input_data['tutor'])
+        tutor = get_teacher(input_data['tutor'])
         result['tutor'] = input_data['tutor']
     except:
         logger.error('tutor field has invalid data for validation')
@@ -81,7 +81,7 @@ def validateDataForPlatoon(input_data):
     return result
 
 
-def _insertNewDataIntoPlatoonModel(platoon_model: Platoon, data, status):
+def _insert_new_data_into_platoon(platoon_model: Platoon, data, status):
     """ Занести в экземпляр взвода новые данные и статус """
     platoon_model.platoon_number = data['platoon_number']
     platoon_model.tutor = Teacher.objects.get(id=data['tutor'])
@@ -90,7 +90,7 @@ def _insertNewDataIntoPlatoonModel(platoon_model: Platoon, data, status):
     return platoon_model
 
 
-def addNewPlatoon(validated_data: dict):
+def add_new_platoon_to_db(validated_data: dict):
     """ Добавить новый взвод в базу 
     input:
         validated_data -> dict c выхода функции валидации данных взвода:
@@ -98,12 +98,12 @@ def addNewPlatoon(validated_data: dict):
             - tutor -> id преподавателя-куратора
             - year -> год зачисления взвода на кафедру
             - status -> статус нахождения взвода на кафедре"""
-    platoon = _insertNewDataIntoPlatoonModel(Platoon(), validated_data, 'учится')
+    platoon = _insert_new_data_into_platoon(Platoon(), validated_data, 'учится')
     platoon.save()
     logger.info('save new platoon to database')
 
 
-def updateExistingPlatoon(validated_data, platoon_number):
+def update_existing_platoon(validated_data, platoon_number):
     """ Обновить данные существующего взвода 
     input:
         validated_data -> dict c выхода функции валидации данных взвода:
@@ -112,17 +112,17 @@ def updateExistingPlatoon(validated_data, platoon_number):
             - year -> год зачисления взвода на кафедру
             - status -> статус нахождения взвода на кафедре
         platoon_number -> номер обновляемого взвода"""
-    platoon = getPlatoonByNumber(platoon_number)
-    platoon = _insertNewDataIntoPlatoonModel(platoon, validated_data, platoon.status)
+    platoon = get_platoon_by_number(platoon_number)
+    platoon = _insert_new_data_into_platoon(platoon, validated_data, platoon.status)
     platoon.save() 
     logger.info(f'update platoon with number {platoon_number} in database')
 
 
-def deletePlatoonWithGraduation(platoon_number):
+def delete_platoon(platoon_number):
     """ Выпустить взвод (удалить его программно) 
     input:
         platoon_number -> номер выпускаемого взвода"""
-    platoon = getPlatoonByNumber(platoon_number)
+    platoon = get_platoon_by_number(platoon_number)
     platoon.status = 'выпустился'
     platoon.save()
     logger.info(f'delette platoon with number {platoon_number}')

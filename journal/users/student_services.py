@@ -5,7 +5,7 @@ import logging, re
 from django.core.exceptions import ValidationError
 from django.db.models.fields import CharField
 
-from users.platoon_services import getPlatoonByNumber
+from users.platoon_services import get_platoon_by_number
 from .models import Student, Platoon
 from django.contrib.auth.hashers import make_password
 
@@ -15,7 +15,7 @@ _login_password_regex = r'^[a-z]+([-_]?[a-z0-9]+){0,2}$'
 _posts = frozenset({'студент', 'командир взвода'})
 
 
-def convertStudentsToJson(students):
+def convert_students_to_json(students):
     """Переводит список студентов в виде QuerySet в JSON нотацию
     input:
         students -> список типа QuerySet
@@ -27,7 +27,7 @@ def convertStudentsToJson(students):
     return {'students': student_arr}
 
 
-def validateStudentData(input_data):
+def validate_student_data(input_data):
     """Проверяет данные для студента в списке input_data на корректность
     input:
         input_data -> dict с проверяемыми следующими данными:
@@ -71,7 +71,7 @@ def validateStudentData(input_data):
         raise ValidationError("Выберите пол: мужской или женский")
 
     try:
-        pl_number = getPlatoonByNumber(input_data['platoon'])
+        pl_number = get_platoon_by_number(input_data['platoon'])
         result['platoon'] = input_data['platoon']
     except Exception:
         logger.error('student: platoon field has invalid data for validation')
@@ -113,7 +113,7 @@ def validateStudentData(input_data):
     return result
 
 
-def getStudent(student_id) -> Student:
+def get_student(student_id) -> Student:
     """Получить экземпляр студента по его номеру student_id
     input:
         student_id -> идентификатор студента в базе данных
@@ -122,7 +122,7 @@ def getStudent(student_id) -> Student:
         Exception в случае ошибки"""
     try:
         student = Student.objects.get(id=student_id)
-        if student.active == 'отчислен':
+        if student.studentprofile.active == 'отчислен':
             raise Exception("Студент с таким идентификатором отчислен!")
         return student
     except:
@@ -130,23 +130,7 @@ def getStudent(student_id) -> Student:
         raise Exception("Студента с таким идентификатором не существует!")
 
 
-def _insertNewDataToStudentModel(new_student, data, active):
-    """Заполнить экземпляр студента новыми данными"""
-    new_student.surname = data['surname']
-    new_student.name = data['name']
-    new_student.patronymic = data['patronymic']
-    new_student.sex = data['sex']
-    new_student.platoon = getPlatoonByNumber(data['platoon'])
-    new_student.military_post = data['military_post']
-    new_student.login = data['login']
-    new_student.password = CharField(make_password(data['password']))
-    new_student.department = data['department']
-    new_student.group_number = data['group_number']
-    new_student.active = CharField(active)
-    return new_student
-
-
-def addNewStudent(validated_data):
+def add_new_student_to_db(validated_data):
     """Добавить нового студента с данными validated_data в базу
     input:
         validated_data -> dict с данными студента после валидации:
@@ -160,12 +144,23 @@ def addNewStudent(validated_data):
             - password -> str с паролем пользователя
             - department -> str с факультетом студента в гражданском вузе
             - group_number -> str с номером группы студента в гражданском вузе"""
-    new_student = _insertNewDataToStudentModel(Student(), validated_data, 'учится')
-    new_student.save()
+    new_student = Student.objects.create_user(surname=validated_data['surname'], 
+                          name=validated_data['name'], 
+                          patronymic=validated_data['patronymic'],
+                          military_post=validated_data['military_post'],
+                          username=validated_data['login'],
+                          password=validated_data['password'])
+    
+    new_student.studentprofile.sex = validated_data['sex']   
+    new_student.studentprofile.platoon = get_platoon_by_number(validated_data['platoon'])
+    new_student.studentprofile.department = validated_data['department']
+    new_student.studentprofile.group_number = validated_data['group_number']
+    new_student.studentprofile.active = 'учится'
+    new_student.studentprofile.save()
     logger.info("create new student in database")
 
 
-def updateStudentInDb(validated_data, id):
+def update_existing_student(validated_data, id):
     """Обновить данные data о студенте с номером id
      input:
         validated_data -> dict с данными студента после валидации:
@@ -175,7 +170,6 @@ def updateStudentInDb(validated_data, id):
             - sex -> str с полом студента
             - platoon -> номер взвода (pk модели Platoon)
             - military_post -> str с должностью студента во взводе
-            - login -> str с логином студента
             - password -> str с паролем пользователя
             - department -> str с факультетом студента в гражданском вузе
             - group_number -> str с номером группы студента в гражданском вузе
@@ -183,20 +177,29 @@ def updateStudentInDb(validated_data, id):
     output:
         Exception -> в случае ошибки поиска студента"""
     student = getStudent(id)
-    student = _insertNewDataToStudentModel(student, validated_data, student.active)
+    student.surname = validated_data['surname']
+    student.name = validated_data['name']
+    student.patronymic = validated_data['patronymic']
+    student.studentprofile.sex = validated_data['sex']
+    student.studentprofile.platoon = get_platoon_by_number(validated_data['platoon'])
+    student.military_post = validated_data['military_post']
+    student.password = CharField(make_password(validated_data['password']))
+    student.studentprofile.department = validated_data['department']
+    student.studentprofile.group_number = validated_data['group_number']
+    student.studentprofile.save();
     student.save()
     logger.info("update existing student with id {id} in database")
 
 
-def deleteStudentFromDb(id):
+def delete_student(id):
     """ Программно удалить студента с номером id из базы (отчислить с кафедры)
     input:
         id -> идентификатор студента в базе данных
     output:
         Exception -> в случае ошибки поиска студента"""
     student = getStudent(id)
-    student.active = 'отчислен'
-    student.save()
+    student.studentprofile.active = 'отчислен'
+    student.studentprofile.save()
     logger.info("remove existing student with id {id} in database")
 
 

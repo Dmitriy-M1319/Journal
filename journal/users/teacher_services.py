@@ -3,7 +3,7 @@
 """
 
 import re, logging
-from .models import Teacher
+from .models import Teacher, TeacherProfile
 from django.core.validators import ValidationError
 from django.contrib.auth.hashers import make_password
 from django.db.models.fields import CharField
@@ -19,7 +19,7 @@ _ranks = frozenset({'лейтенант',
           'полковник'})
 
 
-def validateTeacherData(input_data):
+def validate_teacher_data(input_data):
     """Проверяет данные для преподавателя в списке input_data на корректность
     input:
         input_data -> dict с проверяющими следующими данными:
@@ -99,21 +99,7 @@ def validateTeacherData(input_data):
     return result
 
 
-def _insertNewDataToTeacherModel(teacher, data):
-    """Заполнить переданный экземпляр преподавателя teacher новыми данными из data"""
-    teacher.name = data['name']
-    teacher.surname = data['surname']
-    teacher.patronymic = data['patronymic']
-    teacher.military_rank = data['military_rank']
-    teacher.military_post = data['military_post']
-    teacher.role = data['role']
-    teacher.cycle = data['cycle']
-    teacher.login = data['login']
-    teacher.password = make_password(data['password'])
-    return teacher
-
-
-def getTeacher(teacher_id) -> Teacher:
+def get_teacher(teacher_id) -> Teacher:
     """Получить экземпляр преподавателя по его id
     input:
         teacher_id -> идентификатор pk преподавателя в базе данных
@@ -122,14 +108,14 @@ def getTeacher(teacher_id) -> Teacher:
         Exception -> в случае ошибки"""
     try:
         teacher = Teacher.objects.get(id=teacher_id)
-        if teacher.status == 'уволен':
+        if teacher.teacherprofile.status == 'уволен':
             raise Exception("В данный момент этот преподаватель не работает в учебном центре")
         return teacher
     except Exception:
         raise Exception("Такого преподавателя не существует в базе")
 
 
-def addNewTeacherToDatabase(validated_data):
+def add_new_teacher_to_db(validated_data):
     """Добавить нового преподавателя с данными из validated_data в базу
     input:
         validated_data -> dict с данными преподавателя после валидации:
@@ -142,13 +128,22 @@ def addNewTeacherToDatabase(validated_data):
             - role -> str с числовым значением роли преподавателя в системе
             - login -> str с логином пользователя
             - password -> str с паролем пользователя"""
-    new_teacher = _insertNewDataToTeacherModel(Teacher(), validated_data)
-    new_teacher.status = 'работает'
-    new_teacher.save()
+    new_teacher = Teacher.objects.create_user(surname=validated_data['surname'], 
+                          name=validated_data['name'], 
+                          patronymic=validated_data['patronymic'],
+                          military_post=validated_data['military_post'],
+                          username=validated_data['login'],
+                          password=validated_data['password'])
+
+    new_teacher.teacherprofile.military_rank = validated_data['military_rank'] 
+    new_teacher.teacherprofile.teacher_role = validated_data['role'] 
+    new_teacher.teacherprofile.cycle = validated_data['cycle'] 
+    new_teacher.teacherprofile.status = 'работает' 
+    new_teacher.teacherprofile.save()
     logger.info('create new teacher in database')
      
 
-def updateExistingTeacher(validated_data, teacher_id):
+def update_existing_teacher(validated_data, teacher_id):
     """Обновить запись преподавателя с номером teacher_id данными validated_data
     input:
         validated_data -> dict с данными преподавателя после валидации:
@@ -159,25 +154,32 @@ def updateExistingTeacher(validated_data, teacher_id):
             - military_post -> str с воинской должностью преподавателя на кафедре
             - cycle -> str с названием цикла на кафедре
             - role -> str с числовым значением роли преподавателя в системе
-            - login -> str с логином пользователя
             - password -> str с паролем пользователя
         teacher_id -> идентификатор преподавателя в базе данных
     output:
         Exception -> в случае ошибки"""
     teacher = getTeacher(teacher_id)
-    teacher = _insertNewDataToTeacherModel(teacher, validated_data)
+    teacher.surname = validated_data['surname'] 
+    teacher.name = validated_data['name'] 
+    teacher.patronymic = validated_data['patronymic'] 
+    teacher.military_post = validated_data['military_post'] 
+    teacher.password = make_password(validated_data['password'])
+    teacher.teacherprofile.military_rank = validated_data['military_rank'] 
+    teacher.teacherprofile.teacher_role = validated_data['role'] 
+    teacher.teacherprofile.cycle = validated_data['cycle'] 
+    teacher.teacherprofile.save()
     teacher.save()
     logger.info(f'update existing teacher with id {teacher_id} in database')
 
 
-def deleteTeacherFromDatabase(teacher_id):
+def delete_teacher(teacher_id):
     """ 'Уволить' (программно удалить) преподавателя из базы
     input:
         teacher_id -> идентификатор преподавателя в базе данных
     output:
         Exception -> в случае ошибки"""
     teacher = getTeacher(teacher_id)
-    teacher.status = 'уволен'
-    teacher.save()
+    teacher.teacherprofile.status = 'уволен'
+    teacher.teacherprofile.save()
     logger.info(f'remove existing teacher with id {teacher_id} in database')
 
