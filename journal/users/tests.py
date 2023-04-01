@@ -1,18 +1,20 @@
 from django.core.exceptions import ValidationError
 from django.test import TestCase
-from users.platoon_services import validateDataForPlatoon, addNewPlatoon, updateExistingPlatoon, deletePlatoonWithGraduation, getPlatoonByNumber
-from users.teacher_services import addNewTeacherToDatabase, deleteTeacherFromDatabase, getTeacher, updateExistingTeacher, validateTeacherData
+from users.platoon_services import *
+from users.teacher_services import *
 from users.student_services import *
 
 from .models import Platoon, Teacher
 
 class TeacherServicesTests(TestCase):
     def setUp(self) -> None:
-       Teacher.objects.create(surname='Иванов', name='Иван',
-                              patronymic='Иванович', military_rank='капитан',
-                              military_post='преподаватель', cycle='Цикл 1',
-                              role=1, login='ivanov_i_i', password='t12345678',
-                              status=True)
+       teacher = Teacher.objects.create(surname='Иванов', name='Иван',
+                              patronymic='Иванович', military_post='преподаватель', username='ivanov_i_i', password='t12345678')
+       teacher.teacherprofile.military_rank = 'капитан'
+       teacher.teacherprofile.cycle = 'Цикл 1'
+       teacher.teacherprofile.teacher_role = 1
+       teacher.teacherprofile.status = 'работает'
+       teacher.teacherprofile.save()
        self.input_data_correct = {'surname': 'Сидоров', 'name': 'Петр', 'patronymic': 'Сергеевич',
                     'military_post': 'старший преподаватель', 'military_rank': 'подполковник', 'cycle': 'Цикл 2',
                     'role': 1, 'login': 'sidorov_p_s', 'password': 'oiu564123'}
@@ -25,79 +27,81 @@ class TeacherServicesTests(TestCase):
 
 
     def test_validated_data(self):
-        validated_data1 = validateTeacherData(self.input_data_correct)
+        validated_data1 = validate_teacher_data(self.input_data_correct)
         self.assertEqual(validated_data1, self.input_data_correct)
         with self.assertRaises(ValidationError):
-            validated_data2 = validateTeacherData(self.input_data_incorrect)
+            validated_data2 = validate_teacher_data(self.input_data_incorrect)
 
 
     def test_insert_teacher(self):
-        validated_data = validateTeacherData(self.input_data_correct)
-        addNewTeacherToDatabase(validated_data)
+        validated_data = validate_teacher_data(self.input_data_correct)
+        add_new_teacher_to_db(validated_data)
         teacher = Teacher.objects.get(surname='Сидоров')
         self.assertIsNotNone(teacher)
 
 
     def test_update_teacher(self):
-        teacher = getTeacher(1)
+        teacher = get_teacher(1)
         self.assertIsNotNone(teacher)
-        self.assertEqual(teacher.military_rank, 'капитан')
-        validated_data = validateTeacherData(self.input_data_updating)
-        updateExistingTeacher(validated_data, 1)
-        teacher = getTeacher(1)
+        self.assertEqual(teacher.teacherprofile.military_rank, 'капитан')
+        validated_data = validate_teacher_data(self.input_data_updating)
+        update_existing_teacher(validated_data, 1)
+        teacher = get_teacher(1)
         self.assertIsNotNone(teacher)
-        self.assertEqual(teacher.military_rank, 'майор')
+        self.assertEqual(teacher.teacherprofile.military_rank, 'майор')
 
 
     def test_delete_teacher(self):
-        teacher = getTeacher(1)
+        teacher = get_teacher(1)
         self.assertIsNotNone(teacher)
-        deleteTeacherFromDatabase(1)
+        delete_teacher(1)
         with self.assertRaises(Exception):
-            teacher = getTeacher(1)
+            teacher = get_teacher(1)
 
 
 
 class PlatoonServicesTests(TestCase):
     def setUp(self) -> None:
-        Teacher.objects.create(surname='Иванов', name='Иван',
-                              patronymic='Иванович', military_rank='капитан',
-                              military_post='преподаватель', cycle='Цикл 1',
-                              role=1, login='ivanov_i_i', password='t12345678',
-                              status=True)
-        self.teacher = getTeacher(1)
+        teacher = Teacher.objects.create(surname='Иванов', name='Иван',
+                              patronymic='Иванович', military_post='преподаватель', username='ivanov_i_i', password='t12345678')
+        teacher.teacherprofile.military_rank = 'капитан'
+        teacher.teacherprofile.cycle = 'Цикл 1'
+        teacher.teacherprofile.teacher_role = 1
+        teacher.teacherprofile.status = 'работает'
+        teacher.teacherprofile.save()
+        self.teacher = teacher
         self.input_data_correct = {'platoon_number': '551', 'tutor': self.teacher.id, 'year': 2021, 'status': 'выпустился'}
         self.input_data_incorrect1 = {'platoon_number': '551', 'tutor': self.teacher.id, 'year': 2021, 'status': 'отчислен'}
         self.input_data_incorrect2 = {'platoon_number': '551', 'tutor': Teacher().id, 'year': 2021, 'status': 'выпустился'}
 
 
     def test_validated_data(self):
-        validated_data1 = validateDataForPlatoon(self.input_data_correct) 
+        validated_data1 = validate_platoon_data(self.input_data_correct) 
         self.assertEqual(validated_data1, self.input_data_correct)
         with self.assertRaises(ValidationError):
-            validated_data2 = validateDataForPlatoon(self.input_data_incorrect1) 
+            validated_data2 = validate_platoon_data(self.input_data_incorrect1) 
         with self.assertRaises(ValidationError):
-            validated_data3 = validateDataForPlatoon(self.input_data_incorrect2) 
+            validated_data3 = validate_platoon_data(self.input_data_incorrect2) 
 
 
     def test_insert_platoon(self):
-        validated_data = validateDataForPlatoon(self.input_data_correct)
-        addNewPlatoon(validated_data)
-        platoon = getPlatoonByNumber(551)
+        validated_data = validate_platoon_data(self.input_data_correct)
+        add_new_platoon_to_db(validated_data)
+        platoon = get_platoon_by_number(551)
         self.assertEqual(self.teacher, platoon.tutor)
 
 
     def test_update_platoon(self):
         Platoon.objects.create(platoon_number=451, tutor=self.teacher, year=2020, status='учится')
         self.input_data_correct = {'platoon_number': '451', 'tutor': self.teacher.id, 'year': 2021, 'status': 'выпустился'}
-        platoon = getPlatoonByNumber(451)
+        platoon = get_platoon_by_number(451)
         self.assertIsNotNone(platoon)
         self.assertEqual(platoon.platoon_number, 451)
         self.assertEqual(platoon.year, 2020)
         self.assertEqual(platoon.status, 'учится')
-        validated_data = validateDataForPlatoon(self.input_data_correct)
-        updateExistingPlatoon(validated_data, platoon.platoon_number)
-        platoon = getPlatoonByNumber(451)
+        validated_data = validate_platoon_data(self.input_data_correct)
+        update_existing_platoon(validated_data, platoon.platoon_number)
+        platoon = get_platoon_by_number(451)
         self.assertIsNotNone(platoon)
         self.assertEqual(platoon.platoon_number, 451)
         self.assertEqual(platoon.year, 2021)
@@ -105,24 +109,26 @@ class PlatoonServicesTests(TestCase):
 
     def test_delete_platoon(self):
         Platoon.objects.create(platoon_number=451, tutor=self.teacher, year=2020, status='учится')
-        platoon = getPlatoonByNumber(451)
+        platoon = get_platoon_by_number(451)
         self.assertIsNotNone(platoon)
-        deletePlatoonWithGraduation(platoon.platoon_number)
-        platoon = getPlatoonByNumber(451)
+        delete_platoon(platoon.platoon_number)
+        platoon = get_platoon_by_number(451)
         self.assertEqual(platoon.status, 'выпустился')
 
 
 class StudentServicesTests(TestCase):
     def setUp(self) -> None:
-        Teacher.objects.create(surname='Иванов', name='Иван',
-                              patronymic='Иванович', military_rank='капитан',
-                              military_post='преподаватель', cycle='Цикл 1',
-                              role=1, login='ivanov_i_i', password='t12345678',
-                              status=True)
-        self.teacher = getTeacher(1)
+        teacher = Teacher.objects.create(surname='Иванов', name='Иван',
+                              patronymic='Иванович', military_post='преподаватель', username='ivanov_i_i', password='t12345678')
+        teacher.teacherprofile.military_rank = 'капитан'
+        teacher.teacherprofile.cycle = 'Цикл 1'
+        teacher.teacherprofile.teacher_role = 1
+        teacher.teacherprofile.status = 'работает'
+        teacher.teacherprofile.save()
+        self.teacher = teacher
         Platoon.objects.create(platoon_number=451, tutor=self.teacher, year=2020, status='учится')
 
-        self.platoon = getPlatoonByNumber(451)
+        self.platoon = get_platoon_by_number(451)
         self.input_data_correct = {'surname': 'Сидоров', 'name': 'Петр', 'patronymic': 'Сергеевич', 'sex': 'мужской',
                     'platoon': '451', 'military_post': 'студент', 'login': 'sidorov_p_s', 'password': 'oiu564123',
                     'department': 'FKN', 'group_number': '5'}
@@ -135,17 +141,17 @@ class StudentServicesTests(TestCase):
 
 
     def test_validated_data(self):
-        validated_data = validateStudentData(self.input_data_correct)
+        validated_data = validate_student_data(self.input_data_correct)
         self.assertEqual(validated_data, self.input_data_correct)
         with self.assertRaises(ValidationError):
-            invalid_data = validateStudentData(self.input_data_incorrect)
+            invalid_data = validate_student_data(self.input_data_incorrect)
 
 
     def test_insert_new_student(self):
-        validated_data = validateStudentData(self.input_data_correct)
+        validated_data = validate_student_data(self.input_data_correct)
         self.assertEqual(validated_data, self.input_data_correct)
-        addNewStudent(validated_data)
-        student = getStudent(1)
+        add_new_student_to_db(validated_data)
+        student = get_student(2)
         self.assertIsNotNone(student)
         self.assertEqual(student.surname, self.input_data_correct['surname'])
         self.assertEqual(student.name, self.input_data_correct['name'])
@@ -153,26 +159,25 @@ class StudentServicesTests(TestCase):
 
 
     def test_update_student(self):
-        validated_data = validateStudentData(self.input_data_correct)
-        addNewStudent(validated_data)
-        updating_data = validateStudentData(self.input_data_update)
+        validated_data = validate_student_data(self.input_data_correct)
+        add_new_student_to_db(validated_data)
+        updating_data = validate_student_data(self.input_data_update)
         self.assertEqual(validated_data, self.input_data_correct)
-        updateStudentInDb(updating_data, 1)
-        student = getStudent(1)
+        update_existing_student(updating_data, 2)
+        student = get_student(2)
         self.assertIsNotNone(student)
         self.assertEqual(student.surname, self.input_data_update['surname'])
         self.assertEqual(student.name, self.input_data_update['name'])
         self.assertEqual(student.patronymic, self.input_data_update['patronymic'])
         self.assertEqual(student.military_post, self.input_data_update['military_post'])
-        self.assertEqual(student.login, self.input_data_update['login'])
 
 
     def test_delete_student(self):
-        validated_data = validateStudentData(self.input_data_correct)
-        addNewStudent(validated_data)
-        deleteStudentFromDb(1)
+        validated_data = validate_student_data(self.input_data_correct)
+        add_new_student_to_db(validated_data)
+        delete_student(2)
         with self.assertRaises(Exception):
-            student = getStudent(1)
+            student = get_student(2)
 
 
 

@@ -3,8 +3,8 @@ from django.http import JsonResponse
 from journal.base_view import baseView
 from users.models import *
 from .timetable_service import *
-from users.platoon_services import getPlatoonByNumber
-from users.teacher_services import getTeacher
+from users.platoon_services import get_platoon_by_number
+from users.teacher_services import get_teacher
 from journal.encoders import SubjectClassEncoder, SubjectEncoder
 from django.views.decorators.csrf import ensure_csrf_cookie
 
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 def getTimetableForPlatoonInDayView(request, id): # не работает фильтр по времени
     """Получить расписание для своего взвода на определенный день"""
     logger.info('GET: get timetable for platoon')
-    platoon = getPlatoonByNumber(id)
+    platoon = get_platoon_by_number(id)
     class_day = getDateFromStr(request.GET.get('day'))
     timetable = getPlatoonTimetable(platoon, class_day)
     return JsonResponse(timetable)
@@ -26,7 +26,7 @@ def getTimetableForPlatoonInDayView(request, id): # не работает фил
 def getSubjectsForTeacherView(request, id): # работает
     """ Получить для преподавателя с идентификатором id список предметов, которые он ведет """
     logger.info('GET: get subject list for teacher')
-    teacher = getTeacher(id)
+    teacher = get_teacher(id)
     subjects = teacher.subject_set.all()
     logger.info(f'get subjects for teacher with id {id}')
     return JsonResponse(convertSubjectsToJson(subjects), safe=False, encoder=SubjectEncoder)
@@ -36,7 +36,7 @@ def getSubjectsForTeacherView(request, id): # работает
 def getSubjectClassesForTeacherView(request, id): # работает
     """ Получить все занятия по предмету с номером subject_id, который ведет преподаватель с идентификатором id """
     logger.info('GET: get subject class list for teacher')
-    teacher = getTeacher(id) 
+    teacher = get_teacher(id) 
     subject = getSubject(request.GET.get('subject_id'))
     if not teacher.subject_set.filter(name=subject.name):
         return JsonResponse({'subject_classes': None, 'message': 'Данный предмет не ведется преподавателем'})

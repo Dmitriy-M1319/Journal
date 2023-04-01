@@ -4,6 +4,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db.models.fields import proxy
+from django.dispatch import receiver
+from django.db.models.signals import post_save, pre_save
 
 
 class CustomUser(AbstractUser):
@@ -22,10 +24,13 @@ class CustomUser(AbstractUser):
     military_post = models.CharField(max_length=255)
     base_role = Role.ADMIN
     role = models.CharField(null=True, max_length=50, choices=Role.choices)
-    def save(self, *args, **kwargs):
-        if not self.pk:
-            self.role = self.base_role
-            return super().save(*args, **kwargs)
+    def json(self):
+        if self.role == 'TEACHER':
+            return self.teacherprofile.json()
+        else:
+            return self.studentprofile.json()
+
+
 
 
 class StudentManager(BaseUserManager):
@@ -41,6 +46,10 @@ class Student(CustomUser):
     class Meta:
         proxy = True
 
+@receiver(pre_save, sender=Student)
+def set_role(sender, instance, **kwargs):
+    if not instance.pk:
+        instance.role = instance.base_role
 
 class TeacherManager(BaseUserManager):
     def get_queryset(self, *args, **kwargs):
@@ -55,6 +64,10 @@ class Teacher(CustomUser):
     class Meta:
         proxy = True
 
+@receiver(pre_save, sender=Teacher)
+def set_role(sender, instance, **kwargs):
+    if not instance.pk:
+        instance.role = instance.base_role
 
 class TeacherProfile(models.Model):
     """Модель профиля преподавателя на кафедре"""
@@ -64,7 +77,7 @@ class TeacherProfile(models.Model):
     # Цикл
     cycle = models.CharField(max_length=255)
     # Роль в системе (обычный преподаватель или суперпользователь)
-    teacher_role = models.IntegerField()
+    teacher_role = models.IntegerField(null=True)
     # Статус преподавателя (работает или уволен)
     status = models.CharField(max_length=30)
 
@@ -78,7 +91,10 @@ class TeacherProfile(models.Model):
                     'login': self.user.username,
                     'status': self.status
                     }
-
+@receiver(post_save, sender=Teacher)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created and instance.role == "TEACHER":
+       TeacherProfile.objects.create(user=instance)
 
 class Platoon(models.Model):
     """Модель взвода на кафедре"""
@@ -87,7 +103,7 @@ class Platoon(models.Model):
     # Куратор взвода (ссылка на преподавателя)
     tutor = models.OneToOneField(Teacher, on_delete = models.DO_NOTHING)
     # Год набора
-    year = models.IntegerField()
+    year = models.IntegerField(null=True)
     # Статус взвода (учится или выпустился)
     status = models.CharField(max_length=15)
 
@@ -111,7 +127,7 @@ class StudentProfile(models.Model):
     # Факультет в гражданском вузе
     department = models.CharField(max_length=255)
     # Номер группы на факультете
-    group_number = models.IntegerField()
+    group_number = models.IntegerField(null=True)
     # Статус студента (учится, выпустился или отчислен)
     active = models.CharField(max_length=30)
 
@@ -122,7 +138,7 @@ class StudentProfile(models.Model):
                     'sex': self.sex,
                     'platoon': self.platoon.json(),
                     'military_post': self.user.military_post,
-                    'login': self.user.login,
+                    'login': self.user.username,
                     'department': self.department,
                     'group_number': self.group_number,
                     'status': self.active

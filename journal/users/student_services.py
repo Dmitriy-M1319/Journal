@@ -6,13 +6,13 @@ from django.core.exceptions import ValidationError
 from django.db.models.fields import CharField
 
 from users.platoon_services import get_platoon_by_number
-from .models import Student, Platoon
+from .models import Student, Platoon, StudentProfile
 from django.contrib.auth.hashers import make_password
 
 logger = logging.getLogger(__name__)
 _fio_regex = r'[А-Я]{1}[а-я]+'
 _login_password_regex = r'^[a-z]+([-_]?[a-z0-9]+){0,2}$'
-_posts = frozenset({'студент', 'командир взвода'})
+_posts = {'студент', 'командир взвода'}
 
 
 def convert_students_to_json(students):
@@ -121,7 +121,7 @@ def get_student(student_id) -> Student:
         объект Student в случае успеха
         Exception в случае ошибки"""
     try:
-        student = Student.objects.get(id=student_id)
+        student = Student.student.get(id=student_id)
         if student.studentprofile.active == 'отчислен':
             raise Exception("Студент с таким идентификатором отчислен!")
         return student
@@ -151,16 +151,16 @@ def add_new_student_to_db(validated_data):
                           username=validated_data['login'],
                           password=validated_data['password'])
     
-    new_student.studentprofile.sex = validated_data['sex']   
-    new_student.studentprofile.platoon = get_platoon_by_number(validated_data['platoon'])
-    new_student.studentprofile.department = validated_data['department']
-    new_student.studentprofile.group_number = validated_data['group_number']
-    new_student.studentprofile.active = 'учится'
-    new_student.studentprofile.save()
+    profile = StudentProfile.objects.create(user=new_student, platoon=get_platoon_by_number(validated_data['platoon']))
+    profile.sex = validated_data['sex']   
+    profile.department = validated_data['department']
+    profile.group_number = validated_data['group_number']
+    profile.active = 'учится'
+    profile.save()
     logger.info("create new student in database")
 
 
-def update_existing_student(validated_data, id):
+def update_existing_student(validated_data, student_id):
     """Обновить данные data о студенте с номером id
      input:
         validated_data -> dict с данными студента после валидации:
@@ -176,7 +176,7 @@ def update_existing_student(validated_data, id):
         id -> идентификатор студента в базе данных
     output:
         Exception -> в случае ошибки поиска студента"""
-    student = getStudent(id)
+    student = get_student(student_id)
     student.surname = validated_data['surname']
     student.name = validated_data['name']
     student.patronymic = validated_data['patronymic']
@@ -197,7 +197,7 @@ def delete_student(id):
         id -> идентификатор студента в базе данных
     output:
         Exception -> в случае ошибки поиска студента"""
-    student = getStudent(id)
+    student = get_student(id)
     student.studentprofile.active = 'отчислен'
     student.studentprofile.save()
     logger.info("remove existing student with id {id} in database")

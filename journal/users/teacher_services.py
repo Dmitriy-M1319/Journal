@@ -107,7 +107,7 @@ def get_teacher(teacher_id) -> Teacher:
         объект Teacher -> в случае успеха
         Exception -> в случае ошибки"""
     try:
-        teacher = Teacher.objects.get(id=teacher_id)
+        teacher = Teacher.teacher.get(pk=teacher_id)
         if teacher.teacherprofile.status == 'уволен':
             raise Exception("В данный момент этот преподаватель не работает в учебном центре")
         return teacher
@@ -158,7 +158,7 @@ def update_existing_teacher(validated_data, teacher_id):
         teacher_id -> идентификатор преподавателя в базе данных
     output:
         Exception -> в случае ошибки"""
-    teacher = getTeacher(teacher_id)
+    teacher = get_teacher(teacher_id)
     teacher.surname = validated_data['surname'] 
     teacher.name = validated_data['name'] 
     teacher.patronymic = validated_data['patronymic'] 
@@ -178,7 +178,8 @@ def delete_teacher(teacher_id):
         teacher_id -> идентификатор преподавателя в базе данных
     output:
         Exception -> в случае ошибки"""
-    teacher = getTeacher(teacher_id)
+    print(teacher_id)
+    teacher = get_teacher(teacher_id)
     teacher.teacherprofile.status = 'уволен'
     teacher.teacherprofile.save()
     logger.info(f'remove existing teacher with id {teacher_id} in database')
