@@ -45,6 +45,20 @@ def getPlatoonTimetable(platoon: Platoon, day):
         raise Exception("У данного взвода нет занятий в этот день")
     else:
         return convertSubjectClassesToJson(classes)
+
+
+def get_timetable_for_teacher_on_month(teacher: Teacher, month):
+    """Составить расписание для преподавателя на месяц
+    input:
+        teacher -> преподаватель
+        month -> date с определенным месяцем в году
+    output:
+        dict с объектами SubjectClass в качестве расписания"""
+    classes = dict()
+    for sub in teacher.subject_set.all():
+        classes[sub.name] = sub.subjectclass_set.filter(class_date__month=month.month,
+                                              class_date__year=month.year).order_by('class_date')
+    return classes
         
 
 def getDateFromStr(local_date:str):

@@ -4,9 +4,9 @@
 
 import re
 from django.core.validators import ValidationError
-from users.platoon_services import getAllPlatoons, getStudentsByPlatoonFromDb
+from users.platoon_services import get_all_platoons, get_students_by_platoon
 from marks.models import JournalCeil
-from users.student_services import getStudent
+from users.student_services import get_student
 from timetable.timetable_service import getSubject, getSubjectClass, getSubjectClassesBySubject
 
 _attendance_regex = r'был|неуваж.причина|болен|справка'
@@ -29,7 +29,7 @@ def validateMarkData(input_data: dict):
         или ValidationError в случае ошибки"""
     result = {}
     try:
-        existing_student = getStudent(input_data['student'])
+        existing_student = get_student(input_data['student'])
         result['student'] = existing_student
 
         subject_class = getSubjectClass(input_data['subject_class'])
@@ -66,11 +66,11 @@ def getJournalCeil(journal_id):
 
 def getAllJournalCeilsByPlatoons():
     """Получить все оценки, распределяя их по студентам"""
-    platoons = getAllPlatoons()
+    platoons = get_all_platoons()
     all_marks = dict()
     # Собираем список из студентов
     for platoon in platoons:
-        all_marks[platoon] = getStudentsByPlatoonFromDb(platoon.platoon_number)
+        all_marks[platoon] = get_students_by_platoon(platoon.platoon_number)
 
 
 def getJournalCeilsForStudent(student_id):
@@ -80,7 +80,7 @@ def getJournalCeilsForStudent(student_id):
     output:
         list с объектами JournalCeil -> список ячеек
         Exception -> в случае ошибки"""
-    current_student = getStudent(student_id)
+    current_student = get_student(student_id)
     journal_ceils = JournalCeil.objects.filter(student=current_student).order_by('id')
     return journal_ceils.values()
 

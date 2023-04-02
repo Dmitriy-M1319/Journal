@@ -1,6 +1,6 @@
 import logging
 from django.core.serializers.json import json
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, login, logout
 from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
 from journal.encoders import *
@@ -22,7 +22,14 @@ def loginView(request):
         if not user:
             return JsonResponse({'error': 'Не удалось войти: возможно, неверные логин или пароль'})
         else:
+            login(request, user)
             return JsonResponse(user.json())
+
+@baseView
+def logoutView(request):
+    logout(request)
+    return JsonResponse({'success': True}) 
+
 
 @baseView
 def getAuthUserView(request):
@@ -33,6 +40,11 @@ def getAuthUserView(request):
         encoder = StudentEncoder
     return JsonResponse(user, safe=False, encoder=encoder)
         
+
+@baseView
+def getStudentsView(request):
+    students = Student.student.all()
+    return JsonResponse(convert_students_to_json(students))
 
 @baseView
 def getStudentByIdView(request, id):
@@ -66,6 +78,12 @@ def deleteStudentView(request, id):
         logger.info("POST: remove existing student")
         delete_student(id)
         return JsonResponse({'success': True}) 
+
+@baseView
+def getTeachersView(request):
+    """ Веб-сервис, предоставляющий получение списка преподавателей """
+    teachers = Teacher.teacher.all()
+    return JsonResponse(convert_teachers_to_json(teachers), safe=False, encoder=TeacherEncoder)
 
 
 @baseView

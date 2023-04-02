@@ -3,7 +3,6 @@ import logging
 from django.http import JsonResponse
 from django.http.response import json
 from journal.base_view import baseView
-from django.views.decorators.csrf import ensure_csrf_cookie
 from marks.marks_services import addNewJournalCeil, deleteJournalCeilFromDb, getJournalCeilsBySubject, getJournalCeilsForStudent, updateExistingJournalCeil, validateMarkData
 
 from journal.encoders import *
@@ -26,7 +25,6 @@ def getCeilsBySubjectView(request, id):
 
 
 @baseView
-@ensure_csrf_cookie
 def createCeilView(request):
     """Веб-сервис, предоставляющий создание новой оценки"""
     if request.method == 'POST':
@@ -35,7 +33,6 @@ def createCeilView(request):
 
 
 @baseView
-@ensure_csrf_cookie
 def updateCeilView(request, id):
     """Веб-сервис, предоставляющий обновление существующей оценки"""
     if request.method == 'POST':
@@ -44,7 +41,6 @@ def updateCeilView(request, id):
 
 
 @baseView
-@ensure_csrf_cookie
 def deleteCeilView(request, id):
     """Веб-сервис, предоставляющий удаление существующей оценки"""
     if request.method == 'POST':

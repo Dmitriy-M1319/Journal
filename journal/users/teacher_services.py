@@ -19,6 +19,18 @@ _ranks = frozenset({'лейтенант',
           'полковник'})
 
 
+def convert_teachers_to_json(teachers):
+    """Переводит список преподавателей в виде QuerySet в JSON нотацию
+    input:
+        teachers -> список типа QuerySet
+    output:
+        teachers в виде json"""
+    teacher_arr = list()
+    for teacher in teachers:
+        teacher_arr.append(teacher.json())
+    return {'teachers': teacher_arr}
+
+
 def validate_teacher_data(input_data):
     """Проверяет данные для преподавателя в списке input_data на корректность
     input:
