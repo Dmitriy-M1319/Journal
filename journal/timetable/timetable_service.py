@@ -3,7 +3,7 @@
 """
 import re
 from datetime import date, datetime
-from journal.users.platoon_services import get_platoon_by_number
+from users.platoon_services import get_platoon_by_number
 from .models import SubjectClass, Subject
 
 

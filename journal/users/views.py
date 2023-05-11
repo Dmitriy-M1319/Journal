@@ -1,8 +1,8 @@
 import logging
 
 from django.core.serializers.json import json
-from journal.marks.marks_services import get_ceils_by_platoon_and_subject, get_ceils_for_student
-from journal.marks.serializers import CeilSerializer
+from marks.marks_services import get_ceils_by_platoon_and_subject, get_ceils_for_student
+from marks.serializers import CeilSerializer
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response

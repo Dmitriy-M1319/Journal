@@ -3,7 +3,7 @@
 """
 import logging
 
-from journal.users.models import Platoon, StudentProfile
+from users.models import Platoon, StudentProfile
 
 
 logger = logging.getLogger(__name__)

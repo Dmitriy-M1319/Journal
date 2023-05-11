@@ -14,12 +14,40 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include, re_path
 from users.views import *
 from timetable.views import *
 from marks.views import *
+from rest_framework import routers, permissions
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
 
+# Блок подключения Swagger
+schema_view = get_schema_view(
+   openapi.Info(
+      title="Swagger API",
+      default_version='v1',
+      description="Test description",
+      terms_of_service="https://www.google.com/policies/terms/",
+      contact=openapi.Contact(email="contact@snippets.local"),
+      license=openapi.License(name="BSD License"),
+   ),
+   public=True,
+   permission_classes=(permissions.AllowAny,),
+)
+
+router = routers.SimpleRouter()
+router.register(r'students', StudentProfileViewSet, basename='students')
+router.register(r'teachers', TeacherProfileViewSet, basename='teachers')
+router.register(r'platoons', PlatoonViewSet, basename='platoons')
+router.register(r'subjects', SubjectViewSet, basename='subjects')
+router.register(r'classes', SubjectClassViewSet, basename='classes')
+router.register(r'ceils', CeilViewSet, basename='ceils')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/v1/', include(router.urls)),
+    path('api/v1/auth/', include('djoser.urls')),       
+    re_path(r'^auth/', include('djoser.urls.authtoken')),
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
 ]
