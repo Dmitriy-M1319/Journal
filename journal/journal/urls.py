@@ -22,12 +22,4 @@ from marks.views import *
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('teacher/<int:id>/subjects/', getSubjectsForTeacherView),
-    path('platoon/<int:id>/timetable/', getTimetableForPlatoonInDayView),
-    path('teacher/<int:id>/classes/', getSubjectClassesForTeacherView),
-    path('student/<int:id>/ceils/',  getJournalCeilsView),
-    path('subject/<int:id>/ceils/', getCeilsBySubjectView),
-    path('ceil/create/', createCeilView),
-    path('ceil/<int:id>/update/', updateCeilView),
-    path('ceil/<int:id>/delete/', deleteCeilView),
 ]

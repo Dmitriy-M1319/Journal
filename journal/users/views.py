@@ -1,11 +1,13 @@
 import logging
 
 from django.core.serializers.json import json
+from journal.marks.marks_services import get_ceils_by_platoon_and_subject, get_ceils_for_student
+from journal.marks.serializers import CeilSerializer
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .platoon_services import get_platoon_by_number
+from .platoon_services import delete_platoon, get_platoon_by_number
 from .teacher_services import add_new_teacher_to_db, get_teacher, update_existing_teacher, delete_teacher
 from .student_services import get_student, add_new_student_to_db, update_existing_student, delete_student
 from .models import *
@@ -55,6 +57,13 @@ class StudentProfileViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
         except Exception as e:
             return Response({'message': e}, status=500)
+
+    @action(methods=['get'], detail=True)
+    def marks(self, request, id):
+        """Получить оценки студента по всем предметам"""
+        ceils = get_ceils_for_student(id)
+        serializer = CeilSerializer(ceils, many=True)
+        return Response(serializer.data)
 
 
 class TeacherProfileViewSet(viewsets.ModelViewSet):
@@ -113,9 +122,17 @@ class TeacherProfileViewSet(viewsets.ModelViewSet):
 class PlatoonViewSet(viewsets.ModelViewSet):
     queryset = Platoon.objects.all()
     serializer_class = PlatoonSerializer
-    
+
+    def destroy(self, request, pk=None):
+        try:
+            delete_platoon(pk)
+            return Response(status=201)
+        except Exception as e:
+            return Response({'message': e}, status=500)
+
     @action(methods=['get'], detail=True)
     def students(self, request, id):
+        logger.info('GET: get students for platoon')
         platoon = get_platoon_by_number(id)
         students = StudentProfile.objects.filter(platoon=platoon)
         serializer = StudentProfileSerializer(students, many=True)
@@ -123,6 +140,7 @@ class PlatoonViewSet(viewsets.ModelViewSet):
 
     @action(methods=['get'], detail=True)
     def tutor(self, request, id):
+        logger.info('GET: get tutor for platoon')
         platoon = get_platoon_by_number(id)
         serializer = TeacherProfileSerializer(platoon.tutor)
         return Response(serializer.data)
@@ -133,3 +151,10 @@ class PlatoonViewSet(viewsets.ModelViewSet):
         timetable = get_platoon_timetable(id, request.GET.get('day'))
         serializer = SubjectClassSerializer(timetable, many=True)
         return Response(serializer.data)
+
+    @action(methods=['get'], detail=True)
+    def journal(self, request, id):
+        logger.info('GET: get marks for platoon by subject')
+        subj_id = request.GET.get('subj_id')
+        ceils = get_ceils_by_platoon_and_subject(subj_id, id)
+        return Response(ceils)
