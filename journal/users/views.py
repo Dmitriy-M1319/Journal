@@ -6,10 +6,12 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from .platoon_services import get_platoon_by_number
-from .teacher_services import add_new_teacher_to_db, update_existing_teacher, delete_teacher
+from .teacher_services import add_new_teacher_to_db, get_teacher, update_existing_teacher, delete_teacher
 from .student_services import get_student, add_new_student_to_db, update_existing_student, delete_student
 from .models import *
 from .serializers import StudentProfileSerializer, TeacherProfileSerializer, PlatoonSerializer
+from timetable.serializers import *
+from timetable.timetable_service import get_platoon_timetable, get_subject
 
 
 logger = logging.getLogger(__name__)
@@ -86,6 +88,27 @@ class TeacherProfileViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'message': e}, status=500)
 
+    @action(methods=['get'], detail=True)
+    def subjects(self, request, id):
+        logger.info('GET: get subject list for teacher')
+        teacher = get_teacher(id)
+        subjects = teacher.subject_set.all()
+        logger.info(f'get subjects for teacher with id {id}')
+        return Response(SubjectSerializer(subjects, many=True).data)
+
+    @action(methods=['get'], detail=True)
+    def classes(self, request, id):
+        """ Получить все занятия по предмету с номером subject_id, который ведет преподаватель с идентификатором id """
+        logger.info('GET: get subject class list for teacher')
+        teacher = get_teacher(id) 
+        subject = get_subject(request.GET.get('subject_id'))
+        if not teacher.subject_set.filter(name=subject.name):
+            return Response({'subject_classes': None, 'message': 'Данный предмет не ведется преподавателем'}, status=500)
+        subject_classes = subject.subjectclass_set.all()
+        logger.info(f'get subject classes for teacher with id {id}')
+        serializer = SubjectClassSerializer(subject_classes, many=True)
+        return Response(serializer.data)
+
 
 class PlatoonViewSet(viewsets.ModelViewSet):
     queryset = Platoon.objects.all()
@@ -102,4 +125,11 @@ class PlatoonViewSet(viewsets.ModelViewSet):
     def tutor(self, request, id):
         platoon = get_platoon_by_number(id)
         serializer = TeacherProfileSerializer(platoon.tutor)
+        return Response(serializer.data)
+
+    @action(methods=['get'], detail=True)
+    def timetable(self, request, id):
+        logger.info('GET: get timetable for platoon')
+        timetable = get_platoon_timetable(id, request.GET.get('day'))
+        serializer = SubjectClassSerializer(timetable, many=True)
         return Response(serializer.data)
