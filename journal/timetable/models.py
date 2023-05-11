@@ -17,11 +17,12 @@ class Subject(models.Model):
         db_table = 'subjects'
 
     def json(self):
-        return {'teacher': self.teacher.json(),
-                    'name': self.name,
-                    'hours_count': self.hours_count,
-                    'form': self.form
-                    }
+        return {'id': self.id,
+                'teacher': self.teacher.json(),
+                'name': self.name,
+                'hours_count': self.hours_count,
+                'form': self.form
+                }
 
 
 # Модель занятия
@@ -49,15 +50,16 @@ class SubjectClass(models.Model):
         db_table = 'subject_classes'
 
     def json(self):
-        return {'subject': self.subject.json(),
-                    'platoon': self.platoon.json(),
-                    'date': self.class_date,
-                    'theme_number': self.theme_number,
-                    'theme_name': self.theme_name,
-                    'class_number': self.class_number,
-                    'class_name': self.class_name,
-                    'class_type': self.class_type,
-                    'classroom': self.classroom
-                    }
+        return {'id': self.id,
+                'subject': self.subject.json(),
+                'platoon': self.platoon.json(),
+                'date': self.class_date,
+                'theme_number': self.theme_number,
+                'theme_name': self.theme_name,
+                'class_number': self.class_number,
+                'class_name': self.class_name,
+                'class_type': self.class_type,
+                'classroom': self.classroom
+                }
  
 

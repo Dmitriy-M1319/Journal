@@ -59,6 +59,11 @@ def get_timetable_for_teacher_on_month(teacher: Teacher, month):
         classes[sub.name] = sub.subjectclass_set.filter(class_date__month=month.month,
                                               class_date__year=month.year).order_by('class_date')
     return classes
+
+def get_classes_by_platoon_and_subject(platoon_number, subject):
+    """ Получить все занятия для взвода по определенному предмету """
+    classes = SubjectClass.objects.find(platoon=platoon_number, subject=subject)
+    return classes
         
 
 def getDateFromStr(local_date:str):

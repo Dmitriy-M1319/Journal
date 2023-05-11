@@ -10,7 +10,8 @@ class TeacherEncoder(DjangoJSONEncoder):
     """Encoder для модели Teacher"""
     def default(self, obj):
         if isinstance(obj, Teacher):
-            return {'surname': obj.surname, 
+            return {'id': obj.id,
+                    'surname': obj.surname, 
                     'name': obj.name,
                     'patronymic': obj.patronymic,
                     'military_rank': obj.teacherprofile.military_rank,
@@ -38,7 +39,7 @@ class StudentEncoder(DjangoJSONEncoder):
     """Encoder для модели Student"""
     def default(self, obj):
         if isinstance(obj, Student):
-            return {
+            return {'id': obj.id,
                     'surname': obj.surname, 
                     'name': obj.name,
                     'patronymic': obj.patronymic,
@@ -57,7 +58,7 @@ class SubjectEncoder(DjangoJSONEncoder):
     """Encoder для модели Subject"""
     def default(self, obj):
         if isinstance(obj, Subject):
-            return {
+            return {'id': obj.id,
                     'teacher': obj.teacher.json(),
                     'name': obj.name,
                     'hours_count': obj.hours_count,
@@ -70,7 +71,7 @@ class SubjectClassEncoder(DjangoJSONEncoder):
     """Encoder для модели SubjectClass"""
     def default(self, obj):
         if isinstance(obj, SubjectClass):
-            return {
+            return {'id': obj.id,
                     'subject': obj.subject.json(),
                     'platoon': obj.platoon.json(),
                     'date': obj.class_date,
@@ -88,7 +89,7 @@ class JournalCeilEncoder(DjangoJSONEncoder):
     """Encoder для модели JournalCeil"""
     def default(self, obj):
         if isinstance(obj, JournalCeil):
-            return {
+            return {'id': obj.id,
                     'student': obj.student.json(),
                     'subject_class': obj.subject_class.json(),
                     'mark': obj.mark,

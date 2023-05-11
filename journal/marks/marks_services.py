@@ -7,7 +7,7 @@ from django.core.validators import ValidationError
 from users.platoon_services import get_all_platoons, get_students_by_platoon
 from marks.models import JournalCeil
 from users.student_services import get_student
-from timetable.timetable_service import getSubject, getSubjectClass, getSubjectClassesBySubject
+from timetable.timetable_service import getSubject, getSubjectClass, getSubjectClassesBySubject, get_classes_by_platoon_and_subject
 
 _attendance_regex = r'был|неуваж.причина|болен|справка'
 _mark_regex = r'[2-5]{1,1}'
@@ -64,13 +64,22 @@ def getJournalCeil(journal_id):
         raise Exception('Такой ячейки не существует')
 
 
-def getAllJournalCeilsByPlatoons():
+def get_all_journal_ceils_by_platoons():
     """Получить все оценки, распределяя их по студентам"""
     platoons = get_all_platoons()
     all_marks = dict()
     # Собираем список из студентов
     for platoon in platoons:
         all_marks[platoon] = get_students_by_platoon(platoon.platoon_number)
+
+
+def get_ceils_by_platoon_and_subject(subject_id, platoon_number):
+    """ Получить оценки взвода по определенному предмету """
+    students = get_students_by_platoon(platoon_number)
+    platoon_classes = get_classes_by_platoon_and_subject(platoon_number, subject_id)
+    ceils = dict()
+    for student in students:
+        
 
 
 def getJournalCeilsForStudent(student_id):

@@ -84,15 +84,16 @@ class TeacherProfile(models.Model):
     status = models.CharField(max_length=30)
 
     def json(self):
-        return {'surname': self.user.surname, 
-                    'name': self.user.name,
-                    'patronymic': self.user.patronymic,
-                    'military_rank': self.military_rank,
-                    'military_post': self.user.military_post,
-                    'cycle': self.cycle,
-                    'login': self.user.username,
-                    'status': self.status
-                    }
+        return {'id': self.user.id,
+                'surname': self.user.surname, 
+                'name': self.user.name,
+                'patronymic': self.user.patronymic,
+                'military_rank': self.military_rank,
+                'military_post': self.user.military_post,
+                'cycle': self.cycle,
+                'login': self.user.username,
+                'status': self.status
+                }
 @receiver(post_save, sender=Teacher)
 def create_user_profile(sender, instance, created, **kwargs):
     if created and instance.role == "TEACHER":
@@ -134,15 +135,16 @@ class StudentProfile(models.Model):
     active = models.CharField(max_length=30)
 
     def json(self):
-        return {'surname': self.user.surname, 
-                    'name': self.user.name,
-                    'patronymic': self.user.patronymic,
-                    'sex': self.sex,
-                    'platoon': self.platoon.json(),
-                    'military_post': self.user.military_post,
-                    'login': self.user.username,
-                    'department': self.department,
-                    'group_number': self.group_number,
-                    'status': self.active
-                    }
+        return {'id': self.user.id,
+                'surname': self.user.surname, 
+                'name': self.user.name,
+                'patronymic': self.user.patronymic,
+                'sex': self.sex,
+                'platoon': self.platoon.json(),
+                'military_post': self.user.military_post,
+                'login': self.user.username,
+                'department': self.department,
+                'group_number': self.group_number,
+                'status': self.active
+                }
 
