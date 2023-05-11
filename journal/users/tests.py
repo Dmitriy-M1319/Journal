@@ -4,7 +4,7 @@ from users.platoon_services import *
 from users.teacher_services import *
 from users.student_services import *
 
-from .models import Platoon, Teacher
+from .models import *
 
 class TeacherServicesTests(TestCase):
     def setUp(self) -> None:
