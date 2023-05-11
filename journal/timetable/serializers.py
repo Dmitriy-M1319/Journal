@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Subject, SubjectClass
+from .models import Subject, SubjectClass, CourseDirection
 
 class SubjectSerializer(serializers.ModelSerializer):
     class Meta:
@@ -9,5 +9,11 @@ class SubjectSerializer(serializers.ModelSerializer):
 
 class SubjectClassSerializer(serializers.ModelSerializer):
     class Meta:
-        models = SubjectClass
+        model = SubjectClass
         fields = ('id', 'subject', 'platoon', 'class_date', 'theme_number', 'theme_name', 'class_number', 'class_name', 'class_type', 'classroom')
+
+
+class CourseDirectionSerializer(serializers.ModelSerializer): 
+    class Meta:
+        model = CourseDirection
+        fields = ('id', 'course', 'direction')

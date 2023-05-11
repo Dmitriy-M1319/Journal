@@ -38,5 +38,5 @@ def delete_platoon(platoon_number):
     platoon = get_platoon_by_number(platoon_number)
     platoon.status = 'выпустился'
     platoon.save()
-    logger.info(f'delette platoon with number {platoon_number}')
+    logger.info(f'delete platoon with number {platoon_number}')
 

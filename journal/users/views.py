@@ -13,7 +13,7 @@ from .student_services import get_student, add_new_student_to_db, update_existin
 from .models import *
 from .serializers import StudentProfileSerializer, TeacherProfileSerializer, PlatoonSerializer
 from timetable.serializers import *
-from timetable.timetable_service import get_platoon_timetable, get_subject
+from timetable.timetable_service import get_platoon_timetable, get_subject, get_subject_for_student
 
 
 logger = logging.getLogger(__name__)
@@ -63,6 +63,12 @@ class StudentProfileViewSet(viewsets.ModelViewSet):
         """Получить оценки студента по всем предметам"""
         ceils = get_ceils_for_student(id)
         serializer = CeilSerializer(ceils, many=True)
+        return Response(serializer.data)
+
+    @action(methods=['get'], detail=True)
+    def subjects(self, request, id):
+        subjects = get_subject_for_student(id)
+        serializer = SubjectSerializer(subjects, many=True)
         return Response(serializer.data)
 
 

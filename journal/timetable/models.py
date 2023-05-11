@@ -1,5 +1,5 @@
 from django.db import models
-from users.models import TeacherProfile, Platoon
+from users.models import TeacherProfile, Platoon, CourseDirection
 
 
 # Модель предмета
@@ -26,3 +26,12 @@ class SubjectClass(models.Model):
 
     class Meta:
         db_table = 'subject_classes'
+
+
+class DirectionsSubjects(models.Model):
+    course_direction = models.ForeignKey(CourseDirection, on_delete=models.CASCADE)
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = (('course_direction'), ('subject'))
+        db_table = 'directions_subjects'

@@ -4,7 +4,6 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-
 class TeacherProfile(models.Model):
     """
     Модель профиля преподавателя на кафедре
@@ -21,6 +20,17 @@ class TeacherProfile(models.Model):
         db_table = 'teachers'
 
 
+class CourseDirection(models.Model):
+    """
+    Модель направления и курса для взвода
+    """
+    course = models.IntegerField()
+    direction = models.CharField(max_length=255)
+
+    class Meta:
+        db_table = 'course_directions'
+
+ 
 class Platoon(models.Model):
     """
     Модель взвода на кафедре
@@ -29,7 +39,7 @@ class Platoon(models.Model):
     tutor = models.OneToOneField(TeacherProfile, on_delete = models.DO_NOTHING)
     year = models.IntegerField(null=True)
     status = models.CharField(max_length=15)
-
+    course = models.ForeignKey(CourseDirection, on_delete=models.DO_NOTHING, null=True)
     class Meta:
         db_table = 'platoons'
 
@@ -48,3 +58,5 @@ class StudentProfile(models.Model):
 
     class Meta:
         db_table = 'students'
+
+

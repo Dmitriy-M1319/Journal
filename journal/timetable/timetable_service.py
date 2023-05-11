@@ -3,8 +3,9 @@
 """
 import re
 from datetime import date, datetime
+from users.student_services import get_student
 from users.platoon_services import get_platoon_by_number
-from .models import SubjectClass, Subject
+from .models import DirectionsSubjects, SubjectClass, Subject
 
 
 _date_pattern = r'\d{4}-\d{2}-\d{2}'
@@ -45,6 +46,14 @@ def get_subject(subject_id) -> Subject:
         raise Exception("Такого предмета не существует в базе")
     else:
         return subject
+
+
+def get_subject_for_student(student_id):
+    """ Получить список текущих предметов для студента """
+    student = get_student(student_id)
+    course = student.platoon.course
+    subjects = DirectionsSubjects.objects.filter(course_direction=course).subject_set.all()
+    return subjects
 
 
 def get_subject_class(id):
