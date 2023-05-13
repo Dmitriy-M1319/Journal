@@ -22,19 +22,7 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
-    @action(methods=['get'], detail=True)
-    def teacher_profile(self, request, pk):
-        """ Получить профиль преподавателя по его id записи авторизации """
-        user = User.objects.get(id=pk)
-        serializer = TeacherProfileSerializer(user.teacherprofile)
-        return Response(serializer.data)
-
-    @action(methods=['get'], detail=True)
-    def student_profile(self, request, pk):
-        """ Получить профиль студента по его id записи авторизации """
-        user = User.objects.get(id=pk)
-        serializer = StudentProfileSerializer(user.studentprofile)
-        return Response(serializer.data)
+    
 
 class StudentProfileViewSet(viewsets.ModelViewSet):
     queryset = StudentProfile.objects.all()
@@ -66,7 +54,12 @@ class StudentProfileViewSet(viewsets.ModelViewSet):
             return Response(status=201)
         except Exception as e:
             return Response({'message': e}, status=500)
-
+    @action(methods=['get'], detail=True)
+    def student_profile(self, request, pk):
+        """ Получить профиль студента по его id записи авторизации """
+        user = User.objects.get(id=pk)
+        serializer = StudentProfileSerializer(user.studentprofile)
+        return Response(serializer.data)
     @action(methods=['get'], detail=True)
     def platoon(self, request, pk):
         try:
@@ -123,6 +116,14 @@ class TeacherProfileViewSet(viewsets.ModelViewSet):
             return Response(status=201)
         except Exception as e:
             return Response({'message': e}, status=500)
+
+    @action(methods=['get'], detail=True)
+    def teacher_profile(self, request, pk):
+        """ Получить профиль преподавателя по его id записи авторизации """
+        user = User.objects.get(id=pk)
+        serializer = TeacherProfileSerializer(user.teacherprofile)
+        return Response(serializer.data)
+
 
     @action(methods=['get'], detail=True)
     def subjects(self, request, pk):
