@@ -21,10 +21,10 @@ def get_ceils_by_platoon_and_subject(subject_id, platoon_number):
     """ Получить оценки взвода по определенному предмету """
     students = get_students_by_platoon(platoon_number)
     platoon_classes = get_classes_by_platoon_and_subject(platoon_number, subject_id)
-    ceils = dict()
+    ceils = list()
     for student in students:
-       student_ceils = JournalCeil.objects.filter(subject_class__in=platoon_classes, student=student) 
-       ceils[StudentProfileSerializer(student).data] = CeilSerializer(student_ceils, many=True).data
+        student_ceils = JournalCeil.objects.filter(subject_class__in=platoon_classes, student=student) 
+        ceils.append({'student': StudentProfileSerializer(student).data, 'marks': CeilSerializer(student_ceils, many=True).data})
     return ceils
 
 

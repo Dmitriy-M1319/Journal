@@ -9,6 +9,8 @@ class TeacherProfile(models.Model):
     Модель профиля преподавателя на кафедре
     """
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    surname = models.CharField(max_length=50, null=True)
+    name = models.CharField(max_length=50, null=True)
     patronymic = models.CharField(max_length=40, null=True)
     military_post = models.CharField(max_length=255, null=True)
     military_rank = models.CharField(max_length=20)
@@ -49,6 +51,8 @@ class StudentProfile(models.Model):
     Модель профиля студента на кафедре
     """
     user = models.OneToOneField(User, on_delete=models.DO_NOTHING)
+    surname = models.CharField(max_length=50, null=True)
+    name = models.CharField(max_length=50, null=True)
     patronymic = models.CharField(max_length=40, null=True)
     military_post = models.CharField(max_length=255, null=True)
     platoon = models.ForeignKey(Platoon, on_delete = models.DO_NOTHING)

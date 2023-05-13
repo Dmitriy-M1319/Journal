@@ -7,7 +7,8 @@ from users.teacher_services import get_teacher
 from timetable.models import CourseDirection, DirectionsSubjects
 from users.models import *
 from .timetable_service import *
-from .serializers import SubjectSerializer, SubjectClassSerializer, CourseDirectionSerializer
+from .serializers import SubjectSerializer, SubjectClassSerializer
+from users.serializers import CourseDirectionSerializer
 
 
 logger = logging.getLogger(__name__)
@@ -26,7 +27,7 @@ class SubjectViewSet(viewsets.ModelViewSet):
                                          hours_count=body_data['hours_count'],
                                          form=body_data['form'])
         direction = CourseDirection.objects.get(id=body_data['direction'])
-        DirectionsSubjects.objects.create(direction=direction, subject=subject)
+        DirectionsSubjects.objects.create(course_direction=direction, subject=subject)
         serializer = SubjectSerializer(subject)
         return Response(serializer.data)
 

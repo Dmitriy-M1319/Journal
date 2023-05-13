@@ -15,6 +15,7 @@ def get_platoon_timetable(platoon_number, day):
     """Составить расписание для взвода platoon на определенный день day"""
     platoon = get_platoon_by_number(platoon_number)
     local_day = get_date_from_str(day)
+    print(local_day)
     classes = platoon.subjectclass_set.filter(class_date__day=local_day.day,
                                               class_date__month=local_day.month,
                                               class_date__year=local_day.year).order_by('class_date')
@@ -52,7 +53,11 @@ def get_subject_for_student(student_id):
     """ Получить список текущих предметов для студента """
     student = get_student(student_id)
     course = student.platoon.course
-    subjects = DirectionsSubjects.objects.filter(course_direction=course).subject_set.all()
+    dir_subjs = DirectionsSubjects.objects.filter(course_direction=course)
+    subjects = list()
+    for ds in dir_subjs:
+        subjects.append(ds.subject)
+    print(subjects)
     return subjects
 
 

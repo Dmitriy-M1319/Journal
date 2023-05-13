@@ -34,11 +34,10 @@ def get_student(student_id) -> StudentProfile:
 
 def add_new_student_to_db(user: User, validated_data):
     """Добавить нового студента"""
-    user.first_name = validated_data['first_name']
-    user.last_name = validated_data['last_name']
-    user.save()
     platoon = get_platoon_by_number(validated_data['platoon'])
     profile = StudentProfile(user=user,
+                             surname=validated_data['surname'],
+                             name=validated_data['name'],
                              patronymic=validated_data['patronymic'],
                              military_post=validated_data['military_post'],
                              platoon=platoon,

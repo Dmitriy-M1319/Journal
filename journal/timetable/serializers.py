@@ -11,9 +11,3 @@ class SubjectClassSerializer(serializers.ModelSerializer):
     class Meta:
         model = SubjectClass
         fields = ('id', 'subject', 'platoon', 'class_date', 'theme_number', 'theme_name', 'class_number', 'class_name', 'class_type', 'classroom')
-
-
-class CourseDirectionSerializer(serializers.ModelSerializer): 
-    class Meta:
-        model = CourseDirection
-        fields = ('id', 'course', 'direction')
