@@ -48,8 +48,6 @@ router.register(r'directions', CourseDirectionViewSet, basename='directions')
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/', include(router.urls)),
-    path('api/v1/user/<int:pk>/teacher', UserViewSet.as_view({'teacher_profile'})),
-    path('api/v1/user/<int:pk>/student', UserViewSet.as_view({'student_profile'})),
     path('api/v1/auth/', include('djoser.urls')),       
     re_path(r'^auth/', include('djoser.urls.authtoken')),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),

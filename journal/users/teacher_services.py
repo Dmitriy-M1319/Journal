@@ -41,15 +41,15 @@ def add_new_teacher_to_db(user: User, validated_data):
 def update_existing_teacher(user: User, validated_data, teacher_id):
     """Обновить запись преподавателя с номером teacher_id данными validated_data
     """
-    user.first_name = validated_data['first_name']
-    user.last_name = validated_data['last_name']
     user.save()
     profile = get_teacher(teacher_id)
     profile.user = user
+    profile.surname = validated_data['surname']
+    profile.name = validated_data['name']
     profile.patronymic = validated_data['patronymic']
     profile.military_post = validated_data['military_post']
     profile.military_rank = validated_data['military_rank'] 
-    profile.teacher_role = validated_data['role'] 
+    profile.teacher_role = validated_data['teacher_role'] 
     profile.cycle = validated_data['cycle'] 
     profile.status = 'работает' 
     profile.save()

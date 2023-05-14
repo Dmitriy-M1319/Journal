@@ -1,4 +1,5 @@
 import logging
+from django.core.serializers import serialize
 
 from django.core.serializers.json import json
 from marks.marks_services import get_ceils_by_platoon_and_subject, get_ceils_for_student
@@ -6,14 +7,15 @@ from marks.serializers import CeilSerializer
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework import permissions
 
-from .platoon_services import delete_platoon, get_platoon_by_number
+from .platoon_services import delete_platoon, get_platoon_by_number, get_students_by_platoon
 from .teacher_services import add_new_teacher_to_db, get_teacher, update_existing_teacher, delete_teacher
 from .student_services import get_student, add_new_student_to_db, update_existing_student, delete_student
 from .models import *
 from .serializers import StudentProfileSerializer, TeacherProfileSerializer, PlatoonSerializer, UserSerializer
 from timetable.serializers import *
-from timetable.timetable_service import get_platoon_timetable, get_subject, get_subject_for_student
+from timetable.timetable_service import get_platoon_timetable, get_subject, get_subject_for_student, get_timetable_for_teacher
 
 
 logger = logging.getLogger(__name__)
@@ -27,6 +29,9 @@ class UserViewSet(viewsets.ModelViewSet):
 class StudentProfileViewSet(viewsets.ModelViewSet):
     queryset = StudentProfile.objects.all()
     serializer_class = StudentProfileSerializer
+
+    def get_queryset(self):
+        return StudentProfile.objects.filter(status='учится')
 
     def create(self, request, *args, **kwargs):
         try:
@@ -42,7 +47,7 @@ class StudentProfileViewSet(viewsets.ModelViewSet):
         try:
             body_unicode = request.body.decode('utf-8')
             body_data = json.loads(body_unicode)
-            user = User.objects.get(id=body_data['user_id'])
+            user = User.objects.get(id=body_data['user'])
             profile = update_existing_student(user, body_data, pk)
             return Response(StudentProfileSerializer(profile).data)
         except Exception as e:
@@ -54,12 +59,13 @@ class StudentProfileViewSet(viewsets.ModelViewSet):
             return Response(status=201)
         except Exception as e:
             return Response({'message': e}, status=500)
-    @action(methods=['get'], detail=True)
-    def student_profile(self, request, pk):
-        """ Получить профиль студента по его id записи авторизации """
-        user = User.objects.get(id=pk)
+
+    @action(methods=['get'], detail=False)
+    def student_profile(self, request):
+        user = self.request.user
         serializer = StudentProfileSerializer(user.studentprofile)
         return Response(serializer.data)
+
     @action(methods=['get'], detail=True)
     def platoon(self, request, pk):
         try:
@@ -86,6 +92,10 @@ class StudentProfileViewSet(viewsets.ModelViewSet):
 class TeacherProfileViewSet(viewsets.ModelViewSet):
     queryset = TeacherProfile.objects.all()
     serializer_class = TeacherProfileSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_queryset(self):
+        return TeacherProfile.objects.filter(status='работает')
 
     def create(self, request, *args, **kwargs):
         try:
@@ -104,7 +114,7 @@ class TeacherProfileViewSet(viewsets.ModelViewSet):
         try:
             body_unicode = request.body.decode('utf-8')
             body_data = json.loads(body_unicode)
-            user = User.objects.get(id=body_data['user_id'])
+            user = User.objects.get(id=body_data['user'])
             profile = update_existing_teacher(user, body_data, pk)
             return Response(TeacherProfileSerializer(profile).data)
         except Exception as e:
@@ -117,10 +127,16 @@ class TeacherProfileViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'message': e}, status=500)
 
-    @action(methods=['get'], detail=True)
-    def teacher_profile(self, request, pk):
-        """ Получить профиль преподавателя по его id записи авторизации """
-        user = User.objects.get(id=pk)
+    @action(methods=['get'], detail=False)
+    def logins(self, request):
+        logins = User.objects.all()
+        serializer = UserSerializer(logins, many=True)
+        return Response(serializer.data)
+
+    @action(methods=['get'], detail=False)
+    def teacher_profile(self, request):
+        user = self.request.user
+        print(user)
         serializer = TeacherProfileSerializer(user.teacherprofile)
         return Response(serializer.data)
 
@@ -132,6 +148,14 @@ class TeacherProfileViewSet(viewsets.ModelViewSet):
         subjects = teacher.subject_set.all()
         logger.info(f'get subjects for teacher with id {pk}')
         return Response(SubjectSerializer(subjects, many=True).data)
+
+    @action(methods=['get'], detail=True)
+    def timetable(self, request, pk):
+        logger.info('GET: get timetable list for teacher')
+        teacher = get_teacher(pk)
+        result = get_timetable_for_teacher(teacher)
+        return Response(result)
+
 
     @action(methods=['get'], detail=True)
     def classes(self, request, pk):
@@ -172,6 +196,19 @@ class PlatoonViewSet(viewsets.ModelViewSet):
         platoon = get_platoon_by_number(pk)
         serializer = TeacherProfileSerializer(platoon.tutor)
         return Response(serializer.data)
+
+    @action(methods=['get'], detail=True)
+    def commander(self, request, pk):
+        logger.info('GET: get commander for platoon')
+        commander = get_students_by_platoon(pk).get(military_post='командир взвода')
+        serializer = StudentProfileSerializer(commander)
+        return Response(serializer.data)
+
+    @action(methods=['get'], detail=True)
+    def count(self, request, pk):
+        logger.info('GET: get count for platoon')
+        count = len(get_students_by_platoon(pk))
+        return Response({'count': count})
 
     @action(methods=['get'], detail=True)
     def timetable(self, request, pk):

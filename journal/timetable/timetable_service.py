@@ -3,6 +3,7 @@
 """
 import re
 from datetime import date, datetime
+from .serializers import SubjectClassSerializer
 from users.student_services import get_student
 from users.platoon_services import get_platoon_by_number
 from .models import DirectionsSubjects, SubjectClass, Subject
@@ -75,6 +76,28 @@ def get_subject_classes_by_subject(subject_id):
     current_subject = get_subject(subject_id)
     subject_classes = SubjectClass.objects.filter(subject=current_subject).order_by('id')
     return subject_classes.values()
+
+
+def get_timetable_for_teacher(teacher): 
+    """Получить все занятия для преподавателя, группируя по датам"""
+    subjects = Subject.objects.filter(teacher=teacher)
+    classes = SubjectClass.objects.filter(subject__in=subjects)
+    dates = dict()
+    for cl in classes:
+        if cl.class_date.month < 10:
+            month = '0' + str(cl.class_date.month)
+        else:
+            month = str(cl.class_date.month)
+        key = f'{cl.class_date.day}.{month}.{cl.class_date.year}'
+        if key in dates:
+            dates[key].append(cl)
+        else:
+            dates[key] = list()
+            dates[key].append(cl)
+    result = list()
+    for key in dates:
+        result.append({'date': key, 'classes': SubjectClassSerializer(dates[key], many=True).data})
+    return result
 
 
 def get_date_and_time_from_str(date_time:str):
