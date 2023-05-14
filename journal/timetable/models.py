@@ -22,8 +22,7 @@ class SubjectClass(models.Model):
     class_number = models.IntegerField()
     class_name = models.CharField(max_length=255)
     class_type = models.CharField(max_length=30)
-    #classroom = models.CharField(max_length=10)
-    classroom = models.IntegerField()
+    classroom = models.CharField(max_length=10)
 
     class Meta:
         db_table = 'subject_classes'

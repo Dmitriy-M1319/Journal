@@ -30,9 +30,9 @@ def get_ceils_by_platoon_and_subject(subject_id, platoon_number):
 
 def create_column_for_class(subjects_class: SubjectClass):
     """ Создать 'пустые' ячейки оценок для взвода по определенному занятию """
-    students = get_students_by_platoon(subjects_class.platoon)
+    students = get_students_by_platoon(subjects_class.platoon.platoon_number)
     for student in students:
-        JournalCeil.objects.create(student=student, subjects_class=subjects_class, mark=0, attendance='')
+        JournalCeil.objects.create(student=student, subject_class=subjects_class, mark=0, attendance='')
 
 
 def get_ceils_for_student(student_id):

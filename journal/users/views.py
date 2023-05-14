@@ -31,7 +31,7 @@ class StudentProfileViewSet(viewsets.ModelViewSet):
     serializer_class = StudentProfileSerializer
 
     def get_queryset(self):
-        return StudentProfile.objects.filter(active='study')
+        return StudentProfile.objects.filter(active='study').order_by('surname')
 
     def create(self, request, *args, **kwargs):
         try:
