@@ -15,7 +15,7 @@ from .student_services import get_student, add_new_student_to_db, update_existin
 from .models import *
 from .serializers import StudentProfileSerializer, TeacherProfileSerializer, PlatoonSerializer, UserSerializer
 from timetable.serializers import *
-from timetable.timetable_service import get_platoon_timetable, get_subject, get_subject_for_student, get_timetable_for_teacher
+from timetable.timetable_service import get_all_days_in_this_month, get_platoon_timetable, get_subject, get_subject_for_student, get_timetable_for_teacher
 
 
 logger = logging.getLogger(__name__)
@@ -31,7 +31,7 @@ class StudentProfileViewSet(viewsets.ModelViewSet):
     serializer_class = StudentProfileSerializer
 
     def get_queryset(self):
-        return StudentProfile.objects.filter(status='учится')
+        return StudentProfile.objects.filter(active='study')
 
     def create(self, request, *args, **kwargs):
         try:
@@ -185,8 +185,7 @@ class PlatoonViewSet(viewsets.ModelViewSet):
     @action(methods=['get'], detail=True)
     def students(self, request, pk):
         logger.info('GET: get students for platoon')
-        platoon = get_platoon_by_number(pk)
-        students = StudentProfile.objects.filter(platoon=platoon)
+        students = get_students_by_platoon(pk)
         serializer = StudentProfileSerializer(students, many=True)
         return Response(serializer.data)
 
@@ -212,14 +211,14 @@ class PlatoonViewSet(viewsets.ModelViewSet):
 
     @action(methods=['get'], detail=True)
     def timetable(self, request, pk):
-        """ В заголовках необходимо передать день с ключом day """
         logger.info('GET: get timetable for platoon')
-        try:
-            timetable = get_platoon_timetable(pk, request.GET.get('day'))
-            serializer = SubjectClassSerializer(timetable, many=True)
-            return Response(serializer.data)
-        except Exception as e:
-            return Response({'message': str(e)}, status=404)
+        platoon = get_platoon_by_number(pk)
+        month_days = get_all_days_in_this_month(platoon.study_day)
+        all_timetable = list()
+        for day in month_days:
+            timetable = get_platoon_timetable(pk, day)
+            all_timetable.append(timetable)
+        return Response(all_timetable)
 
 
     @action(methods=['get'], detail=True)

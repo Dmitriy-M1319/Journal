@@ -28,6 +28,7 @@ def get_students_by_platoon(platoon_number):
     """ Получить список студентов взвода с номером platoon_number """
     platoon = get_platoon_by_number(platoon_number)
     students = StudentProfile.objects.filter(platoon=platoon)
+    students = students.filter(active='study')
     return students
 
 

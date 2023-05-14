@@ -23,7 +23,7 @@ class TeacherProfileSerializer(serializers.ModelSerializer):
 class PlatoonSerializer(serializers.ModelSerializer):
     class Meta:
         model = Platoon
-        fields = ('platoon_number', 'tutor', 'year', 'course', 'status')
+        fields = ('platoon_number', 'tutor', 'year', 'course', 'study_day', 'status')
 
 
 class CourseDirectionSerializer(serializers.ModelSerializer):

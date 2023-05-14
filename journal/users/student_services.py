@@ -44,7 +44,7 @@ def add_new_student_to_db(user: User, validated_data):
                              department=validated_data['department'],
                              group_number=validated_data['group_number'])
 
-    profile.active = 'учится'
+    profile.active = 'study'
     profile.save()
     logger.info("create new student in database")
     return profile
@@ -53,9 +53,10 @@ def add_new_student_to_db(user: User, validated_data):
 def update_existing_student(user: User, validated_data, student_id):
     """Обновить данные data о студенте с номером id
     """
+    user.save()
     student = get_student(student_id)
-    user.last_name = validated_data['last_name']
-    user.first_name = validated_data['first_name']
+    student.surname = validated_data['surname']
+    student.name = validated_data['name']
     student.patronymic = validated_data['patronymic']
     student.platoon = get_platoon_by_number(validated_data['platoon'])
     student.military_post = validated_data['military_post']
@@ -73,7 +74,7 @@ def delete_student(id):
     output:
         Exception -> в случае ошибки поиска студента"""
     student = get_student(id)
-    student.active = 'отчислен'
+    student.active = 'non-study'
     student.save()
     logger.info("remove existing student with id {id} in database")
 

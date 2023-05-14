@@ -42,6 +42,8 @@ class Platoon(models.Model):
     year = models.IntegerField(null=True)
     status = models.CharField(max_length=15)
     course = models.ForeignKey(CourseDirection, on_delete=models.DO_NOTHING, null=True)
+    # День прихода (понедельник - 0, вторник - 1 и т.д.
+    study_day = models.IntegerField();
     class Meta:
         db_table = 'platoons'
 

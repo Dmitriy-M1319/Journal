@@ -2,7 +2,8 @@
 Модуль, предоставляющий сервисы для работы с расписанием и занятиями
 """
 import re
-from datetime import date, datetime
+import datetime
+from datetime import date
 from .serializers import SubjectClassSerializer
 from users.student_services import get_student
 from users.platoon_services import get_platoon_by_number
@@ -12,18 +13,44 @@ from .models import DirectionsSubjects, SubjectClass, Subject
 _date_pattern = r'\d{4}-\d{2}-\d{2}'
 
 
-def get_platoon_timetable(platoon_number, day):
+def get_all_days_in_this_month(day_type):
+    """ Получить все определенные дни текущего месяца"""
+    year = date.today().year
+    month = date.today().month
+    day_of_week = day_type  # 0 - понедельник, 1 - вторник, и т.д.
+
+    first_day = datetime.date(year, month, 1)
+    delta = (day_of_week - first_day.weekday()) % 7
+    first_monday = first_day + datetime.timedelta(days=delta)
+
+    days = []
+    current_day = first_monday
+    while current_day.month == month:
+        days.append(current_day)
+        current_day += datetime.timedelta(weeks=1)
+    return days
+
+
+def get_platoon_timetable(platoon_number, local_day):
     """Составить расписание для взвода platoon на определенный день day"""
     platoon = get_platoon_by_number(platoon_number)
-    local_day = get_date_from_str(day)
-    print(local_day)
     classes = platoon.subjectclass_set.filter(class_date__day=local_day.day,
                                               class_date__month=local_day.month,
                                               class_date__year=local_day.year).order_by('class_date')
     if not classes:
-        raise Exception("У данного взвода нет занятий в этот день")
+        if local_day.month < 10:
+            m = '0' + str(local_day.month)
+        else:
+            m = str(local_day.month)
+        key = f'{local_day.day}.{m}.{local_day.year}'
+        return {'date': key, 'message' : "У данного взвода нет занятий в этот день"}
     else:
-        return classes
+        if local_day.month < 10:
+            m = '0' + str(local_day.month)
+        else:
+            m = str(local_day.month)            
+        key = f'{local_day.day}.{m}.{local_day.year}'
+        return {'date': key, 'classes': SubjectClassSerializer(classes, many=True).data}
 
 
 def get_classes_by_platoon_and_subject(platoon_number, subject):
@@ -107,4 +134,4 @@ def get_date_and_time_from_str(date_time:str):
     local_datetime = date_time.split('T')
     local_date = get_date_from_str(local_datetime[0])
     time_lst = local_datetime[1].split(':')
-    return datetime(local_date.year, local_date.month, local_date.day, int(time_lst[0]), int(time_lst[1]))
+    return datetime.datetime(local_date.year, local_date.month, local_date.day, int(time_lst[0]), int(time_lst[1]))
