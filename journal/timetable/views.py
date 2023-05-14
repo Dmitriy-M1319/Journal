@@ -2,7 +2,9 @@ import logging
 from django.core.serializers.json import json
 
 from rest_framework import viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
+from marks.marks_services import create_column_for_class
 from users.teacher_services import get_teacher
 from timetable.models import CourseDirection, DirectionsSubjects
 from users.models import *
@@ -36,6 +38,11 @@ class SubjectClassViewSet(viewsets.ModelViewSet):
     queryset = SubjectClass.objects.all()
     serializer_class = SubjectClassSerializer
 
+    @action(methods=['post'], detail=True)
+    def create_column(self, request, pk):
+        subject_class = get_subject_class(pk)
+        create_column_for_class(subject_class)
+        return Response({}, status=201)
 
 class CourseDirectionViewSet(viewsets.ModelViewSet):
     queryset = CourseDirection.objects.all()

@@ -15,7 +15,7 @@ from .student_services import get_student, add_new_student_to_db, update_existin
 from .models import *
 from .serializers import StudentProfileSerializer, TeacherProfileSerializer, PlatoonSerializer, UserSerializer
 from timetable.serializers import *
-from timetable.timetable_service import get_all_days_in_this_month, get_platoon_timetable, get_subject, get_subject_for_student, get_timetable_for_teacher
+from timetable.timetable_service import get_all_days_in_this_month, get_classes_by_platoon_and_subject, get_platoon_timetable, get_subject, get_subject_for_student, get_timetable_for_teacher
 
 
 logger = logging.getLogger(__name__)
@@ -220,6 +220,13 @@ class PlatoonViewSet(viewsets.ModelViewSet):
             all_timetable.append(timetable)
         return Response(all_timetable)
 
+    @action(methods=['get'], detail=True)
+    def classes(self, request, pk):
+        platoon = get_platoon_by_number(pk)
+        subject = get_subject(request.GET.get('subj_id'))
+        classes = get_classes_by_platoon_and_subject(platoon, subject)
+        serializer = SubjectClassSerializer(classes, many=True)
+        return Response(serializer.data)
 
     @action(methods=['get'], detail=True)
     def journal(self, request, pk):

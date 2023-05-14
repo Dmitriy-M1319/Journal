@@ -8,7 +8,7 @@ class JournalCeil(models.Model):
     subject_class = models.ForeignKey(SubjectClass, on_delete = models.DO_NOTHING)
     mark = models.IntegerField()
     # Посещаемость (был, неуваж. причина, болен)
-    attendance = models.CharField(max_length=10)
+    attendance = models.CharField(max_length=10, default='')
 
     class Meta:
         db_table = 'journal_ceils'

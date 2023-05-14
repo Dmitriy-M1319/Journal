@@ -55,7 +55,7 @@ def get_platoon_timetable(platoon_number, local_day):
 
 def get_classes_by_platoon_and_subject(platoon_number, subject):
     """ Получить все занятия для взвода по определенному предмету """
-    classes = SubjectClass.objects.find(platoon=platoon_number, subject=subject)
+    classes = SubjectClass.objects.filter(platoon=platoon_number, subject=subject)
     return classes
         
 
