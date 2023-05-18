@@ -4,6 +4,8 @@
 import re
 import datetime
 from datetime import date
+
+from users.models import Platoon
 from .serializers import SubjectClassSerializer
 from users.student_services import get_student
 from users.platoon_services import get_platoon_by_number

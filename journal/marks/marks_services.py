@@ -1,6 +1,9 @@
 """
 Модуль бизнес-логики для работы с оценками в электронном журнале
 """
+from django.dispatch import receiver
+from django.db.models.signals import post_save
+
 from marks.models import JournalCeil
 from users.student_services import get_student
 from users.platoon_services import get_students_by_platoon
@@ -33,6 +36,12 @@ def create_column_for_class(subjects_class: SubjectClass):
     students = get_students_by_platoon(subjects_class.platoon.platoon_number)
     for student in students:
         JournalCeil.objects.create(student=student, subject_class=subjects_class, mark=0, attendance='')
+
+
+@receiver(post_save, sender=SubjectClass)
+def create_journal_ceils(sender, instance, created, **kwargs):
+    if created:
+        create_column_for_class(instance)
 
 
 def get_ceils_for_student(student_id):

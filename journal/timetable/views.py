@@ -38,12 +38,6 @@ class SubjectClassViewSet(viewsets.ModelViewSet):
     queryset = SubjectClass.objects.all()
     serializer_class = SubjectClassSerializer
 
-    @action(methods=['post'], detail=True)
-    def create_column(self, request, pk):
-        subject_class = get_subject_class(pk)
-        print(subject_class)
-        create_column_for_class(subject_class)
-        return Response({}, status=201)
 
 class CourseDirectionViewSet(viewsets.ModelViewSet):
     queryset = CourseDirection.objects.all()

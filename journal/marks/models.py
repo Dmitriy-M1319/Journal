@@ -1,4 +1,5 @@
 from django.db import models
+
 from users.models import StudentProfile
 from timetable.models import SubjectClass
 
@@ -12,6 +13,8 @@ class JournalCeil(models.Model):
 
     class Meta:
         db_table = 'journal_ceils'
+
+
 
 
 

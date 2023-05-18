@@ -18,6 +18,7 @@ class StudentProfileSerializer(serializers.ModelSerializer):
                   'patronymic', 
                   'platoon', 
                   'military_post', 
+                  'birth_year',
                   'department', 
                   'group_number',
                   'order_of_expulsion',
