@@ -1,18 +1,13 @@
 """
 Модуль бизнес-логики для сущности студента
 """
-import logging, re
+import logging
 from django.contrib.auth.models import User
-from django.core.exceptions import ValidationError
-from django.db.models.fields import CharField
 
 from users.platoon_services import get_platoon_by_number
 from .models import StudentProfile
 
 logger = logging.getLogger(__name__)
-_fio_regex = r'[А-Я]{1}[а-я]+'
-_login_password_regex = r'^[a-z]+([-_]?[a-z0-9]+){0,2}$'
-_posts = {'студент', 'командир взвода'}
 
 
 def get_student(student_id) -> StudentProfile:
@@ -24,8 +19,6 @@ def get_student(student_id) -> StudentProfile:
         Exception в случае ошибки"""
     try:
         student = StudentProfile.objects.get(id=student_id)
-        if student.active == 'отчислен':
-            raise Exception("Студент с таким идентификатором отчислен!")
         return student
     except:
         logger.info(f'student with id {student_id} does not exist')
@@ -42,7 +35,13 @@ def add_new_student_to_db(user: User, validated_data):
                              military_post=validated_data['military_post'],
                              platoon=platoon,
                              department=validated_data['department'],
-                             group_number=validated_data['group_number'])
+                             group_number=validated_data['group_number'],
+                             public_load=validated_data['public_load'],
+                             order_of_expulsion=validated_data['order_of_expulsion'],
+                             marital_status=validated_data['marital_status'],
+                             address=validated_data['address'],
+                             phone_number=validated_data['phone_number'],
+                             sports_category=validated_data['sports_category'])
 
     profile.active = 'study'
     profile.save()
@@ -62,19 +61,25 @@ def update_existing_student(user: User, validated_data, student_id):
     student.military_post = validated_data['military_post']
     student.department = validated_data['department']
     student.group_number = validated_data['group_number']
+    student.public_load = validated_data['public_load']
+    student.order_of_expulsion = validated_data['order_of_expulsion']
+    student.marital_status = validated_data['marital_status']
+    student.address = validated_data['address']
+    student.phone_number = validated_data['phone_number']
+    student.sports_category = validated_data['sports_category']
     student.save();
     logger.info("update existing student with id {id} in database")
     return student
 
 
 def delete_student(id):
-    """ Программно удалить студента с номером id из базы (отчислить с кафедры)
+    """ Удалить запись студента
     input:
         id -> идентификатор студента в базе данных
     output:
         Exception -> в случае ошибки поиска студента"""
     student = get_student(id)
-    student.active = 'non-study'
+    student.delete()
     student.save()
     logger.info("remove existing student with id {id} in database")
 

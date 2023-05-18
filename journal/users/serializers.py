@@ -11,7 +11,21 @@ class UserSerializer(serializers.ModelSerializer):
 class StudentProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = StudentProfile
-        fields = ('id', 'user', 'surname', 'name', 'patronymic', 'platoon', 'military_post', 'department', 'group_number')
+        fields = ('id', 
+                  'user', 
+                  'surname', 
+                  'name', 
+                  'patronymic', 
+                  'platoon', 
+                  'military_post', 
+                  'department', 
+                  'group_number',
+                  'order_of_expulsion',
+                  'marital_status',
+                  'address',
+                  'phone_number',
+                  'public_load',
+                  'sports_category')
 
 
 class TeacherProfileSerializer(serializers.ModelSerializer):
@@ -23,7 +37,7 @@ class TeacherProfileSerializer(serializers.ModelSerializer):
 class PlatoonSerializer(serializers.ModelSerializer):
     class Meta:
         model = Platoon
-        fields = ('platoon_number', 'tutor', 'year', 'course', 'study_day', 'status')
+        fields = ('platoon_number', 'tutor', 'year', 'order_of_enrollment', 'course', 'study_day', 'status')
 
 
 class CourseDirectionSerializer(serializers.ModelSerializer):
