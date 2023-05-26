@@ -1,9 +1,7 @@
-import logging
-
 from rest_framework import viewsets
-from marks.marks_services import * 
+from marks.models import JournalCeil
+from marks.serializers import CeilSerializer
 
-logger = logging.getLogger(__name__)
 
 class CeilViewSet(viewsets.ModelViewSet):
     queryset = JournalCeil.objects.all()

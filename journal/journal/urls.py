@@ -20,8 +20,6 @@ from marks.views import *
 from rest_framework import routers 
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
-router = routers.SimpleRouter()
-router.register(r'ceils', CeilViewSet, basename='ceils')
 
 urlpatterns = [
     path('students', include('users.urls.student')),
@@ -30,7 +28,7 @@ urlpatterns = [
     path('subjects', include('timetable.urls.subject')),
     path('classes', include('timetable.urls.subjectclass')),
     path('directions', include('timetable.urls.direction')),
-    path('api/v1/', include(router.urls)),
+    path('ceils', include('marks.urls')),
     path('api/v1/auth/', include('djoser.urls')),       
     re_path(r'^auth/', include('djoser.urls.authtoken')),
     path('api/v1/swagger/', SpectacularSwaggerView.as_view(url_name="schema")),

@@ -8,7 +8,6 @@ class JournalCeil(models.Model):
     student = models.ForeignKey(StudentProfile, on_delete = models.DO_NOTHING)
     subject_class = models.ForeignKey(SubjectClass, on_delete = models.DO_NOTHING)
     mark = models.IntegerField()
-    # Посещаемость (был, неуваж. причина, болен)
     attendance = models.CharField(max_length=10, default='')
 
     class Meta:

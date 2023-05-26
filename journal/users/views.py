@@ -8,7 +8,7 @@ from .services.teacher import *
 from .services.student import *
 from utils.serializers import MessageResponseSerializer
 from utils.services import *
-from marks.marks_services import get_ceils_by_platoon_and_subject, get_ceils_for_student
+from marks.services import get_ceils_by_platoon_and_subject, get_ceils_for_student
 from marks.serializers import CeilSerializer
 from .models import *
 from .serializers import StudentProfileSerializer, TeacherProfileSerializer, PlatoonSerializer, UserSerializer
