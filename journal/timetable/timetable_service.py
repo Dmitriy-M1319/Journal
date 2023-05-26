@@ -1,73 +1,66 @@
 """
 Модуль, предоставляющий сервисы для работы с расписанием и занятиями
 """
-# TODO: Посидеть над логгированием
 import re
-from datetime import date, datetime
-from django.core.exceptions import ValidationError
-from users.models import Platoon, Teacher
-from django.http import HttpRequest
-from .models import SubjectClass, Subject
+import datetime
+from datetime import date
 
-_subject_forms = ['экзамен', 'зачет']
-_datetime_pattern = r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}'
+from users.models import Platoon, StudentProfile, TeacherProfile
+
+from .serializers import SubjectClassSerializer
+from .models import DirectionsSubjects, SubjectClass, Subject
+
+
 _date_pattern = r'\d{4}-\d{2}-\d{2}'
 
 
-def convertSubjectsToJson(subjects):
-    result = list()
-    for subject in subjects:
-        result.append(subject.json())
-    return {'subjects': result}
+def get_all_days_in_this_month(day_type):
+    """ Получить все определенные дни текущего месяца"""
+    year = date.today().year
+    month = date.today().month
+    day_of_week = day_type  # 0 - понедельник, 1 - вторник, и т.д.
+
+    first_day = datetime.date(year, month, 1)
+    delta = (day_of_week - first_day.weekday()) % 7
+    first_monday = first_day + datetime.timedelta(days=delta)
+
+    days = []
+    current_day = first_monday
+    while current_day.month == month:
+        days.append(current_day)
+        current_day += datetime.timedelta(weeks=1)
+    return days
 
 
-def convertSubjectClassesToJson(subject_classes):
-    result = list()
-    for subject_class in subject_classes:
-        result.append(subject_class.json())
-    return {'subject_classes': result}
-
-
-def getPlatoonTimetable(platoon: Platoon, day):
-    """Составить расписание для взвода platoon на определенный день day
-    input:
-        platoon -> объект взвода Platoon
-        day -> date с определенным днем в году
-    output:
-        list с объектами SubjectClass в качестве расписания"""
-    for cl in platoon.subjectclass_set.all(): # вот это сравнение работает корректно
-        print(cl.class_date.date() == day)
-
-    classes = platoon.subjectclass_set.filter(class_date__day=day.day,
-                                              class_date__month=day.month,
-                                              class_date__year=day.year).order_by('class_date') # а вот это не работает
+def get_platoon_timetable(platoon: Platoon, local_day):
+    """Составить расписание для взвода platoon на определенный день day"""
+    classes = platoon.subjectclass_set.filter(class_date__day=local_day.day,
+                                              class_date__month=local_day.month,
+                                              class_date__year=local_day.year).order_by('class_date')
     if not classes:
-        raise Exception("У данного взвода нет занятий в этот день")
+        if local_day.month < 10:
+            m = '0' + str(local_day.month)
+        else:
+            m = str(local_day.month)
+        key = f'{local_day.day}.{m}.{local_day.year}'
+        return {'date': key, 'message' : "У данного взвода нет занятий в этот день"}
     else:
-        return convertSubjectClassesToJson(classes)
+        if local_day.month < 10:
+            m = '0' + str(local_day.month)
+        else:
+            m = str(local_day.month)            
+        key = f'{local_day.day}.{m}.{local_day.year}'
+        return {'date': key, 'classes': SubjectClassSerializer(classes, many=True).data}
 
 
-def get_timetable_for_teacher_on_month(teacher: Teacher, month):
-    """Составить расписание для преподавателя на месяц
-    input:
-        teacher -> преподаватель
-        month -> date с определенным месяцем в году
-    output:
-        dict с объектами SubjectClass в качестве расписания"""
-    classes = dict()
-    for sub in teacher.subject_set.all():
-        classes[sub.name] = sub.subjectclass_set.filter(class_date__month=month.month,
-                                              class_date__year=month.year).order_by('class_date')
+def get_classes_by_platoon_and_subject(platoon: Platoon, subject):
+    """ Получить все занятия для взвода по определенному предмету """
+    classes = SubjectClass.objects.filter(platoon=platoon, subject=subject)
     return classes
         
 
-def getDateFromStr(local_date:str):
-    """Выделить дату из строки local_date:
-    input:
-        local_date -> str с датой в формате ГГГГ-ММ-ДД
-    output:
-        объект date -> в случае успеха
-        Exception -> в случае ошибки"""
+def get_date_from_str(local_date:str):
+    """Выделить дату из строки local_date"""
     if not re.fullmatch(_date_pattern, local_date):
         raise Exception("Некорректные данные для даты")
     else:
@@ -75,13 +68,8 @@ def getDateFromStr(local_date:str):
         return date(int(date_lst[0]), int(date_lst[1]), int(date_lst[2]))
 
 
-def getSubject(subject_id) -> Subject:
-    """ Получить экземпляр предмета по его id
-    input:
-        subject_id -> идентификатор предмета в базе данных
-    output:
-        объект Subject -> в случае успеха
-        Exception -> в случае ошибки"""
+def get_subject(subject_id) -> Subject:
+    """ Получить экземпляр предмета по его id"""
     subject = Subject.objects.get(id=subject_id)
     if not subject:
         raise Exception("Такого предмета не существует в базе")
@@ -89,247 +77,60 @@ def getSubject(subject_id) -> Subject:
         return subject
 
 
-def validateSubjectData(input_data):
-    """Проверяет данные для предмета в списке input_data на корректность
-    input:
-        input_data -> dict со следующими данными:
-            - teacher -> идентификатор id преподавателя в базе данных
-            - name -> str с названием предмета
-            - hours -> str с количеством часов для данного предмета
-            - form -> форма итогового контроля предмета
-    output:
-        dict, аналогичный input_data -> в случае успеха валидации
-        ValidationError -> в случае ошибки"""
-    result = dict()
-    try:
-        teacher = Teacher.objects.get(id=input_data["teacher"])
-        result["teacher"] = input_data["teacher"]
-    except Exception as e:
-        raise ValidationError("Некорректно указан преподаватель")
-    
-    if not input_data["name"] or input_data["name"] == '':
-        raise ValidationError("Некорректные данные для названия предмета")
-    else:
-        result["name"] = input_data["name"]
-
-    if input_data["hours"].isnumeric() and int(input_data["hours"]) > 0:
-        result["hours"] = input_data["hours"]
-    else:
-        raise ValidationError("Некорректные данные для количества часов")
-
-    if input_data['form'] in _subject_forms:
-        result["form"] = input_data["form"]
-    else:
-        raise ValidationError("Некорректные данные для формы")
-    return result
+def get_subject_for_student(student: StudentProfile):
+    """ Получить список текущих предметов для студента """
+    course = student.platoon.course
+    dir_subjs = DirectionsSubjects.objects.filter(course_direction=course)
+    subjects = list()
+    for ds in dir_subjs:
+        subjects.append(ds.subject)
+    print(subjects)
+    return subjects
 
 
-def _insertNewDataToSubject(new_subject, data):
-    """Заполнить экземпляр студента новыми данными"""
-    new_subject["teacher"] = data["teacher"]
-    new_subject["name"] = data["name"]
-    new_subject["hours"] = data["hours"]
-    new_subject["form"] = data["form"]
-    return new_subject;
-
-
-def addSubjectToDb(validated_data):
-    """Добавить в базу данных новый предмет c данными validated_data:
-    input:
-        validated_data -> dict с данными предмета после валидации:
-            - teacher -> идентификатор id преподавателя в базе данных
-            - name -> str с названием предмета
-            - hours -> str с количеством часов для данного предмета
-            - form -> форма итогового контроля предмета"""
-    new_subject = _insertNewDataToSubject(Subject(), validated_data)
-    new_subject.save()
-
-
-def updateSubjectInDb(validated_data, id):
-    """Обновить существующий предмет в базе данных
-    input:
-        validated_data -> dict с данными предмета после валидации:
-            - teacher -> идентификатор id преподавателя в базе данных
-            - name -> str с названием предмета
-            - hours -> str с количеством часов для данного предмета
-            - form -> форма итогового контроля предмета
-        id -> идентификатор предмета в базе данных
-    output:
-        Exception -> в случае ошибки"""
-    subject = getSubject(id)
-    subject = _insertNewDataToSubject(subject, validated_data)
-    subject.save()
-
-
-def deleteSubjectFromDb(id):
-    """Удалить предмет из базы данных
-    input:
-        id -> идентификатор предмета в базе данных
-    output:
-        Exception -> в случае ошибки"""
-    subject = getSubject(id)
-    subject.delete()
-
-
-def validateSubjectClassData(input_data: dict):
-    """Проверяет данные для занятия в списке input_data на корректность
-    input:
-        input_data -> dict со следующими данными:
-            - subject -> идентификатор id предмета в базе данных
-            - platoon -> идентификатор pk взвода в базе данных
-            - class_date -> str с датой занятия
-            - theme_number -> номер темы занятия
-            - theme_name -> название темы занятия
-            - class_number -> номер занятия
-            - class_name -> название занятия
-            - class_type -> тип занятия
-            - classroom -> номер аудитории, где проходит занятие
-    output:
-        dict, аналогичный input_data -> в случае успеха валидации
-        ValidationError -> в случае ошибки"""
-    result = {}
-    subject = Subject.objects.get(id=input_data["subject"])
-    if not subject:
-        raise ValidationError("Такого предмета не существует")
-    else:
-        result["subject"] = input_data["subject"]
-
-    pl_number = Platoon.objects.get(platoon_number=input_data['platoon'])
-    if not pl_number:
-       raise ValidationError("Указан несуществующий номер взвода")
-    else:
-        result['platoon'] = input_data['platoon']
-
-    if re.fullmatch(_datetime_pattern, input_data['class_date']):
-        result["class_date"] = input_data["class_date"]
-    else:
-        raise ValidationError("Некорректные данные для даты и времени занятия")
-
-    if input_data["theme_number"].isnumeric() and int(input_data["theme_number"]) > 0:
-        result["theme_number"] = input_data["theme_number"]
-    else:
-        raise ValidationError("Некорректные данные для номера темы")
-
-    if not input_data["theme_name"] or input_data["theme_name"] == '':
-        raise ValidationError("Некорректные данные для названия темы")
-    else:
-        result["theme_name"] = input_data["theme_name"]
-
-    if input_data["class_number"].isnumeric() and int(input_data["class_number"]) > 0:
-        result["class_number"] = input_data["class_number"]
-    else:
-        raise ValidationError("Некорректные данные для номера занятия")
-
-    if not input_data["class_name"] or input_data["class_name"] == '':
-        raise ValidationError("Некорректные данные для названия занятия")
-    else:
-        result["class_name"] = input_data["class_name"]
-    
-    if not input_data["class_type"] or input_data["class_type"] == '':
-        raise ValidationError("Некорректные данные для типа занятия")
-    else:
-        result["class_type"] = input_data["class_type"]
-
-    if input_data["classroom"].isnumeric() and int(input_data["classroom"]) > 0:
-        result["classroom"] = input_data["classroom"]
-    else:
-        raise ValidationError("Некорректные данные для номера аудитории")
-    return result
-
-
-def getSubjectClass(id):
-    """ Получить экземпляр занятия по его id
-    input:
-        id -> идентификатор занятия в базе данных
-    output:
-        объект SubjectClass -> в случае успеха
-        Exception -> в случае ошибки"""
+def get_subject_class(id):
+    """ Получить экземпляр занятия по его id"""
     subject_class = SubjectClass.objects.get(id=id)
     if not subject_class:
         raise Exception("Такого занятия не существует в базе")
     else:
         return subject_class
 
-def getSubjectClassesBySubject(subject_id):
-    """Получить все занятия по определенному предмету
-    input:
-        subject_id -> id предмета в базе данных
-    output:
-        list(SubjectClass) -> список ячеек
-        Exception -> в случае ошибки"""
-    current_subject = getSubject(subject_id)
+
+def get_subject_classes_by_subject(subject_id):
+    """Получить все занятия по определенному предмету с номером id"""
+    current_subject = get_subject(subject_id)
     subject_classes = SubjectClass.objects.filter(subject=current_subject).order_by('id')
     return subject_classes.values()
 
-def getDateAndTimeFromStr(date_time:str):
+
+def get_timetable_for_teacher(teacher: TeacherProfile): 
+    """Получить все занятия для преподавателя, группируя по датам"""
+    subjects = Subject.objects.filter(teacher=teacher)
+    classes = SubjectClass.objects.filter(subject__in=subjects)
+    dates = dict()
+    for cl in classes:
+        if cl.class_date.month < 10:
+            month = '0' + str(cl.class_date.month)
+        else:
+            month = str(cl.class_date.month)
+        key = f'{cl.class_date.day}.{month}.{cl.class_date.year}'
+        if key in dates:
+            dates[key].append(cl)
+        else:
+            dates[key] = list()
+            dates[key].append(cl)
+    result = list()
+    for key in dates:
+        result.append({'date': key, 'classes': SubjectClassSerializer(dates[key], many=True).data})
+    return result
+
+
+def get_date_and_time_from_str(date_time:str):
     """ Преобразовать дату и время в виде строки в объект datetime
     input:
-        date_time -> str с датой и временем в формате ГГГГ-ММ-ДДTЧЧ:ММ
-    output:
-        объект datetime -> в случае успеха
-        Exception -> в случае ошибки"""
+        date_time -> str с датой и временем в формате ГГГГ-ММ-ДДTЧЧ:ММ"""
     local_datetime = date_time.split('T')
-    local_date = getDateFromStr(local_datetime[0])
+    local_date = get_date_from_str(local_datetime[0])
     time_lst = local_datetime[1].split(':')
-    return datetime(local_date.year, local_date.month, local_date.day, int(time_lst[0]), int(time_lst[1]))
-
-def _insertNewDataToSubjectClass(new_class, data):
-    """ Внести новые данные в экземпляр занятия """
-    new_class.platoon = data["platoon"]
-    new_class.subject = data["subject"]
-    new_class.class_date = getDateAndTimeFromStr(data["class_date"])
-    new_class.theme_numbe = data["theme_number"]
-    new_class.theme_name = data["theme_name"]
-    new_class.class_number = data["class_number"]
-    new_class.class_name = data["class_name"]
-    new_class.class_type = data["class_type"]
-    new_class.classroom = data["classroom"]
-    return new_class
-
-
-def addSubjectClassToDb(validated_data):
-    """ Добавить в базу данных новое занятие
-    input:
-        validated_data -> dict с данными занятия после валидации:
-            - subject -> идентификатор id предмета в базе данных
-            - platoon -> идентификатор pk взвода в базе данных
-            - class_date -> str с датой занятия
-            - theme_number -> номер темы занятия
-            - theme_name -> название темы занятия
-            - class_number -> номер занятия
-            - class_name -> название занятия
-            - class_type -> тип занятия
-            - classroom -> номер аудитории, где проходит занятие"""
-    new_class = _insertNewDataToSubjectClass(SubjectClass(), validated_data)
-    new_class.save()
-
-
-def updateSubjectClassInDb(validated_data, id):
-    """ Обновить в базе данных существующее занятие
-    input:
-        validated_data -> dict с данными занятия после валидации:
-            - subject -> идентификатор id предмета в базе данных
-            - platoon -> идентификатор pk взвода в базе данных
-            - class_date -> str с датой занятия
-            - theme_number -> номер темы занятия
-            - theme_name -> название темы занятия
-            - class_number -> номер занятия
-            - class_name -> название занятия
-            - class_type -> тип занятия
-            - classroom -> номер аудитории, где проходит занятие
-        id -> идентификатор занятия в базе данных
-    output:
-        Exception -> в случае ошибки"""
-    subj_class = getSubjectClass(id)
-    subj_class = _insertNewDataToSubjectClass(subj_class, validated_data)
-    subj_class.save()
-
-
-def deleteSubjectClassFromDb(id):
-    """ Удалить занятие из базы данных
-    input:
-        id -> идентификатор занятия в базе данных
-    output:
-        Exception -> в случае ошибки поиска занятия"""
-    subj_class = getSubjectClass(id)
-    subj_class.delete()
+    return datetime.datetime(local_date.year, local_date.month, local_date.day, int(time_lst[0]), int(time_lst[1]))

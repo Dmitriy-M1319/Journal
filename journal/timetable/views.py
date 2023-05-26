@@ -1,103 +1,42 @@
+import logging
 from django.core.serializers.json import json
-from django.http import JsonResponse
-from journal.base_view import baseView
+
+from rest_framework import viewsets
+from rest_framework.response import Response
+from users.services.teacher import get_teacher
+from timetable.models import CourseDirection, DirectionsSubjects
 from users.models import *
 from .timetable_service import *
-from users.platoon_services import get_platoon_by_number
-from users.teacher_services import get_teacher
-from journal.encoders import SubjectClassEncoder, SubjectEncoder
-from django.views.decorators.csrf import ensure_csrf_cookie
+from .serializers import SubjectSerializer, SubjectClassSerializer
+from users.serializers import CourseDirectionSerializer
 
-import logging
 
 logger = logging.getLogger(__name__)
 
-@baseView
-def getTimetableForPlatoonInDayView(request, id): # не работает фильтр по времени
-    """Получить расписание для своего взвода на определенный день"""
-    logger.info('GET: get timetable for platoon')
-    platoon = get_platoon_by_number(id)
-    class_day = getDateFromStr(request.GET.get('day'))
-    timetable = getPlatoonTimetable(platoon, class_day)
-    return JsonResponse(timetable)
+
+class SubjectViewSet(viewsets.ModelViewSet):
+    queryset = Subject.objects.all()
+    serializer_class = SubjectSerializer
+
+    def create(self, request, *args, **kwargs):
+        body_unicode = request.body.decode('utf-8')
+        body_data = json.loads(body_unicode)
+        teacher = get_teacher(body_data['teacher'])
+        subject = Subject.objects.create(name=body_data['name'],
+                                         teacher=teacher,
+                                         hours_count=body_data['hours_count'],
+                                         form=body_data['form'])
+        direction = CourseDirection.objects.get(id=body_data['direction'])
+        DirectionsSubjects.objects.create(course_direction=direction, subject=subject)
+        serializer = SubjectSerializer(subject)
+        return Response(serializer.data)
 
 
-@baseView
-def getSubjectsForTeacherView(request, id): # работает
-    """ Получить для преподавателя с идентификатором id список предметов, которые он ведет """
-    logger.info('GET: get subject list for teacher')
-    teacher = get_teacher(id)
-    subjects = teacher.subject_set.all()
-    logger.info(f'get subjects for teacher with id {id}')
-    return JsonResponse(convertSubjectsToJson(subjects), safe=False, encoder=SubjectEncoder)
+class SubjectClassViewSet(viewsets.ModelViewSet):
+    queryset = SubjectClass.objects.all()
+    serializer_class = SubjectClassSerializer
 
 
-@baseView
-def getSubjectClassesForTeacherView(request, id): # работает
-    """ Получить все занятия по предмету с номером subject_id, который ведет преподаватель с идентификатором id """
-    logger.info('GET: get subject class list for teacher')
-    teacher = get_teacher(id) 
-    subject = getSubject(request.GET.get('subject_id'))
-    if not teacher.subject_set.filter(name=subject.name):
-        return JsonResponse({'subject_classes': None, 'message': 'Данный предмет не ведется преподавателем'})
-
-    subject_classes = subject.subjectclass_set.all()
-    logger.info(f'get subject classes for teacher with id {id}')
-    return JsonResponse(convertSubjectClassesToJson(subject_classes), safe=False, encoder=SubjectClassEncoder)
-
-
-
-@baseView
-@ensure_csrf_cookie
-def createSubjectView(request):
-    if request.method == 'POST':
-        logger.info('POST: create new subject')
-        addSubjectToDb(validateSubjectData(json.loads(request.body)))
-        return JsonResponse({'success': True})
-
-
-@baseView
-@ensure_csrf_cookie
-def updateSubjectView(request, id):
-    if request.method == 'POST':
-        logger.info('POST: update existing subject with id {id}')
-        updateSubjectInDb(validateSubjectData(json.loads(request.body)), id)
-        return JsonResponse({'success': True})
-
-
-@baseView
-@ensure_csrf_cookie
-def deleteSubjectView(request, id):
-    if request.method == 'POST':
-        logger.info('POST: remove existing subject with id {id}')
-        deleteSubjectFromDb(id)
-        return JsonResponse({'success': True})
-
-
-@baseView
-@ensure_csrf_cookie
-def createSubjectClassView(request):
-    if request.method == 'POST':
-        logger.info('POST: create new subject class')
-        addSubjectClassToDb(validateSubjectClassData(json.loads(request.body)))
-        return JsonResponse({'success': True})
-
-
-@baseView
-@ensure_csrf_cookie
-def updateSubjectClassView(request, id):
-    if request.method == 'POST':
-        logger.info('POST: update existing subject class with id {id}')
-        updateSubjectClassInDb(validateSubjectClassData(json.loads(request.body)), id)
-        return JsonResponse({'success': True})
-
-
-@baseView
-@ensure_csrf_cookie
-def deleteSubjectClassView(request, id):
-    if request.method == 'POST':
-        logger.info('POST: remove existing subject class with id {id}')
-        deleteSubjectClassFromDb(id)
-        return JsonResponse({'success': True})
-
-
+class CourseDirectionViewSet(viewsets.ModelViewSet):
+    queryset = CourseDirection.objects.all()
+    serializer_class = CourseDirectionSerializer

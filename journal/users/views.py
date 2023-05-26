@@ -1,189 +1,197 @@
-import logging
-from django.core.serializers.json import json
-from django.contrib.auth import authenticate, login, logout
-from django.http import JsonResponse
-from django.views.decorators.csrf import ensure_csrf_cookie
-from journal.encoders import *
-from journal.base_view import baseView
-from .platoon_services import *
-from .teacher_services import *
-from .student_services import *
+from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework import permissions
+
+from .services.platoon import *
+from .services.teacher import * 
+from .services.student import *
+from utils.serializers import MessageResponseSerializer
+from utils.services import *
+from marks.marks_services import get_ceils_by_platoon_and_subject, get_ceils_for_student
+from marks.serializers import CeilSerializer
 from .models import *
+from .serializers import StudentProfileSerializer, TeacherProfileSerializer, PlatoonSerializer, UserSerializer
+from timetable.serializers import *
+from timetable.timetable_service import get_classes_by_platoon_and_subject, get_subject, get_subject_for_student, get_timetable_for_teacher
 
 
-logger = logging.getLogger(__name__)
+class StudentProfileViewSet(viewsets.ModelViewSet):
+    queryset = StudentProfile.objects.all()
+    serializer_class = StudentProfileSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def create(self, request, *args, **kwargs):
+        try:
+            body_data = load_post_data(request)
+            user = User.objects.get(id=body_data['user'])
+            profile = add_new_student_to_db(user, body_data)
+            return Response(StudentProfileSerializer(profile).data)
+        except Exception as e:
+            return Response({'message': e}, status=500)
+
+    def update(self, request, pk=None):
+        try:
+            body_data = load_post_data(request)
+            user = User.objects.get(id=body_data['user'])
+            profile = update_existing_student(user, body_data, pk)
+            return Response(StudentProfileSerializer(profile).data)
+        except Exception as e:
+            return Response({'message': e}, status=500)
+ 
+    @action(methods=['post'], detail=True)
+    def expulse(self, request, pk=None):
+        try:
+            expulse_student(pk)
+            return Response(MessageResponseSerializer({'success': True, 'message': 'Успешно'}).data)
+        except Exception as e:
+            return Response(MessageResponseSerializer({'success': False, 'message': e}).data, status=500)
+
+    @action(methods=['get'], detail=False)
+    def student_profile(self, request):
+        user = self.request.user
+        serializer = StudentProfileSerializer(user.studentprofile)
+        return Response(serializer.data)
+
+    @action(methods=['get'], detail=True)
+    def platoon(self, request, pk):
+        try:
+            student = get_student(pk)
+            serializer = PlatoonSerializer(student.platoon)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(MessageResponseSerializer({'success': False, 'message': e}).data, status=500)
+
+    @action(methods=['get'], detail=True)
+    def marks(self, request, pk):
+        ceils = get_ceils_for_student(pk)
+        serializer = CeilSerializer(ceils, many=True)
+        return Response(serializer.data)
+
+    @action(methods=['get'], detail=True)
+    def subjects(self, request, pk):
+        subjects = get_subject_for_student(pk)
+        serializer = SubjectSerializer(subjects, many=True)
+        return Response(serializer.data)
 
 
-@baseView
-def loginView(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        user = authenticate(username=data['login'], password=data['password'])
-        if not user:
-            return JsonResponse({'error': 'Не удалось войти: возможно, неверные логин или пароль'})
-        else:
-            login(request, user)
-            return JsonResponse(user.json())
+class TeacherProfileViewSet(viewsets.ModelViewSet):
+    queryset = TeacherProfile.objects.all()
+    serializer_class = TeacherProfileSerializer
+    permission_classes = (permissions.IsAuthenticated,)
 
-@baseView
-def logoutView(request):
-    logout(request)
-    return JsonResponse({'success': True}) 
+    def get_queryset(self):
+        return TeacherProfile.objects.filter(status='работает')
 
+    def create(self, request, *args, **kwargs):
+        try:
+            body_data = load_post_data(request)
+            user = User.objects.get(id=body_data['user'])
+            profile = add_new_teacher_to_db(user, body_data)
+            serializer = TeacherProfileSerializer(profile)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(MessageResponseSerializer({'success': False, 'message': e}).data, status=500)
 
-@baseView
-def getAuthUserView(request):
-    user = get_teacher(request.user.id)
-    if user.role == "TEACHER":
-        encoder = TeacherEncoder
-    else:
-        encoder = StudentEncoder
-    return JsonResponse(user, safe=False, encoder=encoder)
-        
+    def update(self, request, pk=None):
+        try:
+            body_data = load_post_data(request)
+            user = User.objects.get(id=body_data['user'])
+            profile = update_existing_teacher(user, body_data, pk)
+            return Response(TeacherProfileSerializer(profile).data)
+        except Exception as e:
+            return Response(MessageResponseSerializer({'success': False, 'message': e}).data, status=500)
 
-@baseView
-def getStudentsView(request):
-    students = Student.student.all()
-    return JsonResponse(convert_students_to_json(students))
+    @action(methods=['post'], detail=True)
+    def dismiss(self, request, pk=None):
+        try:
+            dismiss_teacher(pk)
+            return Response(MessageResponseSerializer({'success': True, 'message': 'Успешно'}).data)
+        except Exception as e:
+            return Response(MessageResponseSerializer({'success': False, 'message': e}).data, status=500)
 
-@baseView
-def getStudentByIdView(request, id):
-    """Веб-сервис, предоставляющий получение студента по его id"""
-    student = get_student(id)
-    return JsonResponse(student, safe=False, encoder=StudentEncoder)
+    @action(methods=['get'], detail=False)
+    def logins(self, request):
+        logins = User.objects.all()
+        serializer = UserSerializer(logins, many=True)
+        return Response(serializer.data)
 
-
-@baseView
-def createStudentView(request):
-    """Добавить студента на кафедру"""
-    if request.method == 'POST':
-        logger.info("POST: create new student")
-        add_new_student_to_db(validate_student_data(json.loads(request.body)))
-        return JsonResponse({'success': True}) 
-            
-
-@baseView
-def updateStudentView(request, id):
-    """Обновить данные студента на кафедре"""
-    if request.method == 'POST':
-        logger.info("POST: update existing student")
-        update_existing_student(validate_student_data(json.loads(request.body)), id)
-        return JsonResponse({'success': True}) 
+    @action(methods=['get'], detail=False)
+    def teacher_profile(self, request):
+        user = self.request.user
+        serializer = TeacherProfileSerializer(user.teacherprofile)
+        return Response(serializer.data)
 
 
-@baseView
-def deleteStudentView(request, id):
-    """ 'Отчислить' студента с кафедры """
-    if request.method == 'POST':
-        logger.info("POST: remove existing student")
-        delete_student(id)
-        return JsonResponse({'success': True}) 
+    @action(methods=['get'], detail=True)
+    def subjects(self, request, pk):
+        teacher = get_teacher(pk)
+        subjects = teacher.subject_set.all()
+        return Response(SubjectSerializer(subjects, many=True).data)
 
-@baseView
-def getTeachersView(request):
-    """ Веб-сервис, предоставляющий получение списка преподавателей """
-    teachers = Teacher.teacher.all()
-    return JsonResponse(convert_teachers_to_json(teachers), safe=False, encoder=TeacherEncoder)
+    @action(methods=['get'], detail=True)
+    def timetable(self, request, pk):
+        teacher = get_teacher(pk)
+        result = get_timetable_for_teacher(teacher)
+        return Response(result)
 
 
-@baseView
-def getTeacherByIdView(request, id):
-    """Веб-сервис, предоставляющий получение студента по его id"""
-    teacher = get_teacher(id)
-    return JsonResponse(teacher, safe=False, encoder=TeacherEncoder)
+    @action(methods=['get'], detail=True)
+    def classes(self, request, pk):
+        """ Получить все занятия по предмету с номером subject_id, который ведет преподаватель с идентификатором id """
+        try:
+            subject_classes = get_classes_for_teacher(pk, request.GET.get('subject_id'))
+            serializer = SubjectClassSerializer(subject_classes, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(MessageResponseSerializer({'success': False, 'message': e}).data, status=500)
 
 
-@baseView
-@ensure_csrf_cookie
-def createTeacherView(request):
-    """Веб-сервис, предоставляющий занесение приглашенного преподавателя в базу"""
-    if request.method == 'POST':
-        logger.info("POST: create new teacher")
-        body = request.body
-        body_json = json.loads(body)
-        add_new_teacher_to_db(validate_teacher_data(body_json))
-        return JsonResponse({'body': body_json, 'Success': True}) 
+class PlatoonViewSet(viewsets.ModelViewSet):
+    queryset = Platoon.objects.all()
+    serializer_class = PlatoonSerializer
+    permission_classes = (permissions.IsAuthenticated,)
 
 
-@baseView
-@ensure_csrf_cookie
-def updateTeacherView(request, id):
-    """Веб-сервис, предоставляющий обновление информации о преподавателе"""
-    if request.method == 'POST':
-        logger.info("POST: update existing teacher")
-        body = request.body
-        body_json = json.loads(body)
-        update_existing_teacher(validate_teacher_data(body_json), id)
-        return JsonResponse({'success': True}) 
+    @action(methods=['get'], detail=True)
+    def students(self, request, pk):
+        students = get_students_by_platoon(pk)
+        serializer = StudentProfileSerializer(students, many=True)
+        return Response(serializer.data)
 
+    @action(methods=['get'], detail=True)
+    def tutor(self, request, pk):
+        platoon = get_platoon_by_number(pk)
+        serializer = TeacherProfileSerializer(platoon.tutor)
+        return Response(serializer.data)
 
-@baseView
-@ensure_csrf_cookie
-def deleteTeacherView(request, id):
-    """Веб-сервис, предоставляющий увольнение преподавателей с кафедры"""
-    if request.method == 'POST':
-        logger.info("POST: remove existing teacher")
-        delete_teacher(id)
-        return JsonResponse({'success': True}) 
+    @action(methods=['get'], detail=True)
+    def commander(self, request, pk):
+        commander = get_students_by_platoon(pk).get(military_post='командир взвода')
+        serializer = StudentProfileSerializer(commander)
+        return Response(serializer.data)
 
+    @action(methods=['get'], detail=True)
+    def count(self, request, pk):
+        count = len(get_students_by_platoon(pk))
+        return Response({'count': count})
 
-@baseView
-def getPlatoonByNumberView(request, id):
-    platoon = get_platoon_by_number(id)
-    return JsonResponse(platoon, safe=False, encoder=PlatoonEncoder)
+    @action(methods=['get'], detail=True)
+    def timetable(self, request, pk):
+        timetable = create_timetable_for_platoon(pk) 
+        return Response(timetable)
 
+    @action(methods=['get'], detail=True)
+    def classes(self, request, pk):
+        platoon = get_platoon_by_number(pk)
+        subject = get_subject(request.GET.get('subj_id'))
+        classes = get_classes_by_platoon_and_subject(platoon, subject)
+        serializer = SubjectClassSerializer(classes, many=True)
+        return Response(serializer.data)
 
-@baseView
-def getPlatoonByStudentView(request, id):
-    """Веб-сервис, предоставляющий получение объекта взвода, в котором состоит студент с номером id"""
-    logger.info('GET: get platoon by student')
-    platoon = get_student(id).studentprofile.platoon
-    return JsonResponse(platoon, safe=False, encoder=PlatoonEncoder)
-
-
-@baseView
-def getStudentsByPlatoonView(request, id):
-    """Веб-сервис, предоставляющий получение списка студентов взвода с номером id"""
-    logger.info('GET: get list of students from platoon')
-    platoon = get_platoon_by_number(id)
-    students = platoon.student_set.all()
-    return JsonResponse(convert_students_to_json(students), safe=False, encoder=StudentEncoder)
-
-
-@baseView
-def getPlatoonTutorView(request, id):
-    """Веб-сервис, предоставляющий получение куратора взвода с номером id"""
-    logger.info('GET: get platoon tutor')
-    platoon = get_platoon_by_number(id)
-    tutor = platoon.tutor
-    if not tutor:
-        return JsonResponse({'tutor': None, 'message': 'У данного взвода нет куратора'})
-    return JsonResponse({'tutor': tutor}, safe=False, encoder=TeacherEncoder)
-
-
-
-@baseView
-def createPlatoonView(request):
-    """Веб-сервис, предоставляющий добавление нового взвода на кафедру"""
-    if request.method == 'POST':
-        logger.info('POST: create new platoon')
-        add_new_platoon_to_db(validate_platoon_data(json.loads(request.body)))
-        return JsonResponse({'success': True}) 
-
-
-@baseView
-def updatePlatoonView(request, id):
-    """Веб-сервис, предоставляющий обновление данных существующего взвода на кафедре"""
-    if request.method == 'POST':
-        logger.info('POST: update existing platoon')
-        update_existing_platoon(validate_platoon_data(json.loads(request.body)), id)
-        return JsonResponse({'success': True}) 
-
-
-@baseView
-def deletePlatoonView(request, id):
-    """Веб-сервис, предоставляющий 'выпуск' взвода с кафедры """
-    if request.method == 'POST':
-        logger.info('POST: delete(graduate) existing platoon')
-        delete_platoon(id)
-        return JsonResponse({'success': True})
+    @action(methods=['get'], detail=True)
+    def journal(self, request, pk):
+        """ В заголовках необходимо добавить subj_id в качестве id предмета """
+        subj_id = request.GET.get('subj_id')
+        ceils = get_ceils_by_platoon_and_subject(subj_id, pk)
+        return Response(ceils)

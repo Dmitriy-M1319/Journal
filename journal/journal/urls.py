@@ -14,34 +14,27 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include, re_path
 from users.views import *
 from timetable.views import *
 from marks.views import *
+from rest_framework import routers 
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
+router = routers.SimpleRouter()
+router.register(r'subjects', SubjectViewSet, basename='subjects')
+router.register(r'classes', SubjectClassViewSet, basename='classes')
+router.register(r'ceils', CeilViewSet, basename='ceils')
+router.register(r'directions', CourseDirectionViewSet, basename='directions')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('login/', loginView),
-    path('logout/', logoutView),
-    path('authtest/', getAuthUserView),
-    path('students/', getStudentsView),
-    path('student/<int:id>/', getStudentByIdView),
-    path('teachers/', getTeachersView),
-    path('teacher/<int:id>/', getTeacherByIdView),
-    path('teacher/<int:id>/update/', updateTeacherView),
-    path('teacher/<int:id>/delete/', deleteTeacherView),
-    path('teacher/create/', createTeacherView),
-    path('platoon/<int:id>/', getPlatoonByNumberView),
-    path('student/<int:id>/platoon/', getPlatoonByStudentView),
-    path('platoon/<int:id>/students/', getStudentsByPlatoonView),
-    path('platoon/<int:id>/tutor/', getPlatoonTutorView),
-    path('teacher/<int:id>/subjects/', getSubjectsForTeacherView),
-    path('platoon/<int:id>/timetable/', getTimetableForPlatoonInDayView),
-    path('teacher/<int:id>/classes/', getSubjectClassesForTeacherView),
-    path('student/<int:id>/ceils/',  getJournalCeilsView),
-    path('subject/<int:id>/ceils/', getCeilsBySubjectView),
-    path('ceil/create/', createCeilView),
-    path('ceil/<int:id>/update/', updateCeilView),
-    path('ceil/<int:id>/delete/', deleteCeilView),
+    path('students', include('users.urls.student')),
+    path('teachers', include('users.urls.teacher')),
+    path('platoons', include('users.urls.platoon')),
+    path('api/v1/', include(router.urls)),
+    path('api/v1/auth/', include('djoser.urls')),       
+    re_path(r'^auth/', include('djoser.urls.authtoken')),
+    path('api/v1/swagger/', SpectacularSwaggerView.as_view(url_name="schema")),
+    path('api/v1/schema/', SpectacularAPIView.as_view(), name="schema"),
 ]
