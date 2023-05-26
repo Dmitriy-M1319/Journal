@@ -2,8 +2,9 @@
 Модуль бизнес-логики для взвода
 """
 from django.db.models import QuerySet
-from timetable.timetable_service import get_all_days_in_this_month, get_platoon_timetable
+from timetable.services import get_platoon_timetable
 from users.models import Platoon, StudentProfile
+from utils.services import get_all_days_in_this_month
 
 
 def get_platoon_by_number(platoon_number: int) -> Platoon:

@@ -1,9 +1,7 @@
 """
 Модуль бизнес-логики для сущности преподавателя
 """
-from django.db.models import QuerySet
 from users.models import User, TeacherProfile
-from timetable.timetable_service import get_subject
 
 
 def get_teacher(teacher_id: int) -> TeacherProfile:
@@ -15,18 +13,6 @@ def get_teacher(teacher_id: int) -> TeacherProfile:
         return teacher
     except Exception:
         raise Exception("Такого преподавателя не существует в базе")
-
-
-def get_classes_for_teacher(teacher_id: int, subject_id: int) -> QuerySet:
-    """
-    Получить список занятий для данного преподавателя по определенному предмету
-    """
-    teacher = get_teacher(teacher_id) 
-    subject = get_subject(subject_id)
-    if not teacher.subject_set.filter(name=subject.name):
-        raise Exception('Данный предмет не ведется преподавателем')
-    return subject.subjectclass_set.all()
-
 
 
 def add_new_teacher_to_db(user: User, validated_data: dict) -> TeacherProfile:

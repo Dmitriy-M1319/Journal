@@ -13,7 +13,7 @@ from marks.serializers import CeilSerializer
 from .models import *
 from .serializers import StudentProfileSerializer, TeacherProfileSerializer, PlatoonSerializer, UserSerializer
 from timetable.serializers import *
-from timetable.timetable_service import get_classes_by_platoon_and_subject, get_subject, get_subject_for_student, get_timetable_for_teacher
+from timetable.services import get_classes_by_platoon_and_subject, get_subject, get_subject_classes_for_teacher, get_subject_for_student, get_timetable_for_teacher
 
 
 class StudentProfileViewSet(viewsets.ModelViewSet):
@@ -140,7 +140,8 @@ class TeacherProfileViewSet(viewsets.ModelViewSet):
     def classes(self, request, pk):
         """ Получить все занятия по предмету с номером subject_id, который ведет преподаватель с идентификатором id """
         try:
-            subject_classes = get_classes_for_teacher(pk, request.GET.get('subject_id'))
+            teacher = get_teacher(pk)
+            subject_classes = get_subject_classes_for_teacher(teacher, request.GET.get('subject_id'))
             serializer = SubjectClassSerializer(subject_classes, many=True)
             return Response(serializer.data)
         except Exception as e:

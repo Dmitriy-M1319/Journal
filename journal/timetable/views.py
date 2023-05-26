@@ -1,17 +1,12 @@
-import logging
-from django.core.serializers.json import json
-
 from rest_framework import viewsets
 from rest_framework.response import Response
-from users.services.teacher import get_teacher
-from timetable.models import CourseDirection, DirectionsSubjects
+
+from timetable.models import CourseDirection, Subject, SubjectClass
 from users.models import *
-from .timetable_service import *
+from .services import create_subject
 from .serializers import SubjectSerializer, SubjectClassSerializer
 from users.serializers import CourseDirectionSerializer
-
-
-logger = logging.getLogger(__name__)
+from utils.services import *
 
 
 class SubjectViewSet(viewsets.ModelViewSet):
@@ -19,15 +14,8 @@ class SubjectViewSet(viewsets.ModelViewSet):
     serializer_class = SubjectSerializer
 
     def create(self, request, *args, **kwargs):
-        body_unicode = request.body.decode('utf-8')
-        body_data = json.loads(body_unicode)
-        teacher = get_teacher(body_data['teacher'])
-        subject = Subject.objects.create(name=body_data['name'],
-                                         teacher=teacher,
-                                         hours_count=body_data['hours_count'],
-                                         form=body_data['form'])
-        direction = CourseDirection.objects.get(id=body_data['direction'])
-        DirectionsSubjects.objects.create(course_direction=direction, subject=subject)
+        body_data = load_post_data(request)
+        subject = create_subject(body_data)
         serializer = SubjectSerializer(subject)
         return Response(serializer.data)
 
