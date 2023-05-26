@@ -3,4 +3,4 @@ journal/db.sqlite3
 __pycache__/
 journal/**/__pycache__/
 journal/insert.sql
-
+.idea/*

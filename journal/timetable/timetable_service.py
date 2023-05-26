@@ -5,10 +5,9 @@ import re
 import datetime
 from datetime import date
 
-from users.models import Platoon
+from users.models import Platoon, StudentProfile, TeacherProfile
+
 from .serializers import SubjectClassSerializer
-from users.student_services import get_student
-from users.platoon_services import get_platoon_by_number
 from .models import DirectionsSubjects, SubjectClass, Subject
 
 
@@ -33,9 +32,8 @@ def get_all_days_in_this_month(day_type):
     return days
 
 
-def get_platoon_timetable(platoon_number, local_day):
+def get_platoon_timetable(platoon: Platoon, local_day):
     """Составить расписание для взвода platoon на определенный день day"""
-    platoon = get_platoon_by_number(platoon_number)
     classes = platoon.subjectclass_set.filter(class_date__day=local_day.day,
                                               class_date__month=local_day.month,
                                               class_date__year=local_day.year).order_by('class_date')
@@ -55,9 +53,9 @@ def get_platoon_timetable(platoon_number, local_day):
         return {'date': key, 'classes': SubjectClassSerializer(classes, many=True).data}
 
 
-def get_classes_by_platoon_and_subject(platoon_number, subject):
+def get_classes_by_platoon_and_subject(platoon: Platoon, subject):
     """ Получить все занятия для взвода по определенному предмету """
-    classes = SubjectClass.objects.filter(platoon=platoon_number, subject=subject)
+    classes = SubjectClass.objects.filter(platoon=platoon, subject=subject)
     return classes
         
 
@@ -79,9 +77,8 @@ def get_subject(subject_id) -> Subject:
         return subject
 
 
-def get_subject_for_student(student_id):
+def get_subject_for_student(student: StudentProfile):
     """ Получить список текущих предметов для студента """
-    student = get_student(student_id)
     course = student.platoon.course
     dir_subjs = DirectionsSubjects.objects.filter(course_direction=course)
     subjects = list()
@@ -107,7 +104,7 @@ def get_subject_classes_by_subject(subject_id):
     return subject_classes.values()
 
 
-def get_timetable_for_teacher(teacher): 
+def get_timetable_for_teacher(teacher: TeacherProfile): 
     """Получить все занятия для преподавателя, группируя по датам"""
     subjects = Subject.objects.filter(teacher=teacher)
     classes = SubjectClass.objects.filter(subject__in=subjects)

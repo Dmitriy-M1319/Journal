@@ -18,28 +18,10 @@ from django.urls import path, include, re_path
 from users.views import *
 from timetable.views import *
 from marks.views import *
-from rest_framework import routers, permissions
-from drf_yasg.views import get_schema_view
-from drf_yasg import openapi
-
-# Блок подключения Swagger
-schema_view = get_schema_view(
-   openapi.Info(
-      title="Swagger API",
-      default_version='v1',
-      description="Test description",
-      terms_of_service="https://www.google.com/policies/terms/",
-      contact=openapi.Contact(email="contact@snippets.local"),
-      license=openapi.License(name="BSD License"),
-   ),
-   public=True,
-   permission_classes=(permissions.AllowAny,),
-)
+from rest_framework import routers 
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 router = routers.SimpleRouter()
-router.register(r'students', StudentProfileViewSet, basename='students')
-router.register(r'teachers', TeacherProfileViewSet, basename='teachers')
-router.register(r'platoons', PlatoonViewSet, basename='platoons')
 router.register(r'subjects', SubjectViewSet, basename='subjects')
 router.register(r'classes', SubjectClassViewSet, basename='classes')
 router.register(r'ceils', CeilViewSet, basename='ceils')
@@ -47,8 +29,12 @@ router.register(r'directions', CourseDirectionViewSet, basename='directions')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('students', include('users.urls.student')),
+    path('teachers', include('users.urls.teacher')),
+    path('platoons', include('users.urls.platoon')),
     path('api/v1/', include(router.urls)),
     path('api/v1/auth/', include('djoser.urls')),       
     re_path(r'^auth/', include('djoser.urls.authtoken')),
-    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('api/v1/swagger/', SpectacularSwaggerView.as_view(url_name="schema")),
+    path('api/v1/schema/', SpectacularAPIView.as_view(), name="schema"),
 ]

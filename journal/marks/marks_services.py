@@ -5,8 +5,8 @@ from django.dispatch import receiver
 from django.db.models.signals import post_save
 
 from marks.models import JournalCeil
-from users.student_services import get_student
-from users.platoon_services import get_students_by_platoon
+from users.services.student import get_student
+from users.services.platoon import get_students_by_platoon
 from timetable.timetable_service import *
 from users.serializers import StudentProfileSerializer
 from .serializers import CeilSerializer

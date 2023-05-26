@@ -2,10 +2,8 @@ import logging
 from django.core.serializers.json import json
 
 from rest_framework import viewsets
-from rest_framework.decorators import action
 from rest_framework.response import Response
-from marks.marks_services import create_column_for_class
-from users.teacher_services import get_teacher
+from users.services.teacher import get_teacher
 from timetable.models import CourseDirection, DirectionsSubjects
 from users.models import *
 from .timetable_service import *
