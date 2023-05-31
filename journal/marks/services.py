@@ -49,10 +49,11 @@ def create_journal_ceils(sender, instance, created, **kwargs):
         create_column_for_class(instance)
 
 
-def get_ceils_for_student(student: StudentProfile):
+def get_ceils_for_student_by_subject(student: StudentProfile, subject: Subject):
     """
     Получить список оценок для студента
     """
-    journal_ceils = JournalCeil.objects.filter(student=student).order_by('id')
-    return journal_ceils.values()
+    journal_ceils = JournalCeil.objects.filter(student=student, 
+                                               subject_class__subject=subject).order_by('subject_class__class_date')
+    return journal_ceils
 

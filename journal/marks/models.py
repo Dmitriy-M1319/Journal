@@ -12,8 +12,3 @@ class JournalCeil(models.Model):
 
     class Meta:
         db_table = 'journal_ceils'
-
-
-
-
-
