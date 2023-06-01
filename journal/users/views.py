@@ -1,3 +1,5 @@
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -8,7 +10,7 @@ from .services.teacher import *
 from .services.student import *
 from utils.serializers import MessageResponseSerializer
 from utils.services import *
-from marks.services import get_ceils_by_platoon_and_subject, get_ceils_for_student
+from marks.services import get_ceils_by_platoon_and_subject, get_ceils_for_student_by_subject
 from marks.serializers import CeilSerializer
 from .models import *
 from .serializers import StudentProfileSerializer, TeacherProfileSerializer, PlatoonSerializer, UserSerializer
@@ -62,15 +64,19 @@ class StudentProfileViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response(MessageResponseSerializer({'success': False, 'message': e}).data, status=500)
 
+    @extend_schema(parameters=[OpenApiParameter("subj_id", OpenApiTypes.NUMBER, OpenApiParameter.QUERY, description="group id for operation selection by group")])
     @action(methods=['get'], detail=True)
-    def marks(self, request, pk):
-        ceils = get_ceils_for_student(pk)
+    def marks(self, request, pk): 
+        student = get_student(pk);
+        subject = get_subject(request.GET.get('subj_id'))
+        ceils = get_ceils_for_student_by_subject(student, subject)
         serializer = CeilSerializer(ceils, many=True)
         return Response(serializer.data)
 
     @action(methods=['get'], detail=True)
     def subjects(self, request, pk):
-        subjects = get_subject_for_student(pk)
+        student = get_student(pk);
+        subjects = get_subject_for_student(student)
         serializer = SubjectSerializer(subjects, many=True)
         return Response(serializer.data)
 
