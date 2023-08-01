@@ -1,6 +1,6 @@
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import permissions
@@ -24,31 +24,34 @@ class StudentProfileViewSet(viewsets.ModelViewSet):
     serializer_class = StudentProfileSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
+    @extend_schema(request=StudentCreateSerializer)
     def create(self, request, *args, **kwargs):
         try:
             body_data = load_post_data(request)
-            user = User.objects.get(id=body_data['user'])
-            profile = add_new_student_to_db(user, body_data)
+            profile = add_new_student_to_db(body_data)
             return Response(StudentProfileSerializer(profile).data)
         except Exception as e:
             return Response({'message': e}, status=500)
 
-    def update(self, request, pk=None):
+    @extend_schema(request=StudentCreateSerializer)
+    def update(self, request, pk):
         try:
             body_data = load_post_data(request)
-            user = User.objects.get(id=body_data['user'])
-            profile = update_existing_student(user, body_data, pk)
+            profile = update_existing_student(body_data, pk)
             return Response(StudentProfileSerializer(profile).data)
         except Exception as e:
             return Response({'message': e}, status=500)
  
+    @extend_schema(responses={
+            status.HTTP_200_OK: MessageResponseSerializer,
+            status.HTTP_400_BAD_REQUEST: MessageResponseSerializer})
     @action(methods=['post'], detail=True)
     def expulse(self, request, pk=None):
         try:
             expulse_student(pk)
             return Response(MessageResponseSerializer({'success': True, 'message': 'Успешно'}).data)
         except Exception as e:
-            return Response(MessageResponseSerializer({'success': False, 'message': e}).data, status=500)
+            return Response(MessageResponseSerializer({'success': False, 'message': e}).data, status=400)
 
     @action(methods=['get'], detail=False)
     def student_profile(self, request):
@@ -93,21 +96,21 @@ class TeacherProfileViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return TeacherProfile.objects.filter(status='работает')
 
+    @extend_schema(request=TeacherCreateSerializer)
     def create(self, request, *args, **kwargs):
         try:
             body_data = load_post_data(request)
-            user = User.objects.get(id=body_data['user'])
-            profile = add_new_teacher_to_db(user, body_data)
+            profile = add_new_teacher_to_db(body_data)
             serializer = TeacherProfileSerializer(profile)
             return Response(serializer.data)
         except Exception as e:
             return Response(MessageResponseSerializer({'success': False, 'message': e}).data, status=500)
 
-    def update(self, request, pk=None):
+    @extend_schema(request=TeacherCreateSerializer)
+    def update(self, request, pk):
         try:
             body_data = load_post_data(request)
-            user = User.objects.get(id=body_data['user'])
-            profile = update_existing_teacher(user, body_data, pk)
+            profile = update_existing_teacher(body_data, pk)
             return Response(TeacherProfileSerializer(profile).data)
         except Exception as e:
             return Response(MessageResponseSerializer({'success': False, 'message': e}).data, status=500)
@@ -132,7 +135,6 @@ class TeacherProfileViewSet(viewsets.ModelViewSet):
         serializer = TeacherProfileSerializer(user.teacherprofile)
         return Response(serializer.data)
 
-
     @action(methods=['get'], detail=True)
     def subjects(self, request, pk):
         teacher = get_teacher(pk)
@@ -145,7 +147,12 @@ class TeacherProfileViewSet(viewsets.ModelViewSet):
         result = get_timetable_for_teacher(teacher)
         return Response(result)
 
-
+    @extend_schema(parameters=[
+            OpenApiParameter("subject_id", 
+                             OpenApiTypes.UUID, 
+                             OpenApiParameter.QUERY, 
+                             description="Идентификатор предмета, по которому будет получен список занятий")
+        ])
     @action(methods=['get'], detail=True)
     def classes(self, request, pk):
         """ Получить все занятия по предмету с номером subject_id, который ведет преподаватель с идентификатором id """
@@ -162,7 +169,6 @@ class PlatoonViewSet(viewsets.ModelViewSet):
     queryset = Platoon.objects.all()
     serializer_class = PlatoonSerializer
     permission_classes = (permissions.IsAuthenticated,)
-
 
     @action(methods=['get'], detail=True)
     def students(self, request, pk):
@@ -200,9 +206,14 @@ class PlatoonViewSet(viewsets.ModelViewSet):
         serializer = SubjectClassSerializer(classes, many=True)
         return Response(serializer.data)
 
+    @extend_schema(parameters=[
+            OpenApiParameter("subj_id", 
+                             OpenApiTypes.UUID, 
+                             OpenApiParameter.QUERY, 
+                             description="Идентификатор предмета, по которому будет получен список оценок")
+        ])
     @action(methods=['get'], detail=True)
     def journal(self, request, pk):
-        """ В заголовках необходимо добавить subj_id в качестве id предмета """
         subj_id = request.GET.get('subj_id')
         ceils = get_ceils_by_platoon_and_subject(subj_id, pk)
         return Response(ceils)

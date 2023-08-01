@@ -9,25 +9,63 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('id', 'first_name', 'last_name', 'username')
 
 
+class StudentCreateSerializer(serializers.Serializer):
+    user = serializers.IntegerField()
+    surname = serializers.CharField(max_length=50)
+    name = serializers.CharField(max_length=50)
+    birth_year = serializers.IntegerField()
+    patronymic = serializers.CharField(max_length=40)
+    military_post = serializers.CharField(max_length=255)
+    platoon = serializers.IntegerField()
+    department = serializers.CharField(max_length=255, required=False)
+    group_number = serializers.IntegerField(required=False)
+    order_of_expulsion = serializers.CharField(max_length=255, required=False)
+    marital_status = serializers.CharField(max_length=30, required=False)
+    address = serializers.CharField(max_length=255, required=False)
+    phone_number = serializers.CharField(max_length=11, required=False)
+    public_load = serializers.CharField(max_length=50, required=False)
+    sports_category = serializers.CharField(max_length=100, required=False)
+
+    def create(self, validated_data):
+        user = User.objects.get(pk=validated_data['user'])
+        platoon = Platoon.objects.get(platoon_number=validated_data['platoon'])
+        result_data = validated_data
+        result_data['user'] = user
+        result_data['platoon'] = platoon
+        return StudentProfile(**result_data)
+
+    def update(self, instance, validated_data):
+        user = User.objects.get(pk=validated_data.get('user', 
+                                                      instance.user._get_pk_val()))
+        platoon = Platoon.objects.get(pk=validated_data.get('platoon', 
+                                                      instance.platoon))
+        instance.user = user
+        instance.surname = validated_data.get('surname', instance.surname)
+        instance.name = validated_data.get('name', instance.name)
+        instance.birth_year = validated_data.get('birth_year', instance.birth_year)
+        instance.patronymic = validated_data.get('patronymic', instance.patronymic)
+        instance.military_post = validated_data.get('military_post', instance.military_post)
+        instance.platoon = platoon
+        instance.department = validated_data.get('department', instance.department)
+        instance.group_number = validated_data.get('group_number', instance.group_number)
+        instance.order_of_expulsion = validated_data.get('order_of_expulsion', instance.order_of_expulsion)
+        instance.marital_status = validated_data.get('marital_status', instance.marital_status)
+        instance.address = validated_data.get('address', instance.address)
+        instance.phone_number = validated_data.get('phone_number', instance.phone_number)
+        instance.public_load = validated_data.get('public_load', instance.public_load)
+        instance.sports_category = validated_data.get('sports_category', instance.sports_category)
+    
+    def validate_military_post(self, value):
+        _military_posts = ['студент', 'командир взвода']
+        if value not in _military_posts:
+            raise serializers.ValidationError("Некорректная воинская должность")
+        return value
+
+
 class StudentProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = StudentProfile
-        fields = ('id', 
-                  'user', 
-                  'surname', 
-                  'name', 
-                  'patronymic', 
-                  'platoon', 
-                  'military_post', 
-                  'birth_year',
-                  'department', 
-                  'group_number',
-                  'order_of_expulsion',
-                  'marital_status',
-                  'address',
-                  'phone_number',
-                  'public_load',
-                  'sports_category')
+        fields = ('__all__')
 
 
 class TeacherCreateSerializer(serializers.Serializer):
