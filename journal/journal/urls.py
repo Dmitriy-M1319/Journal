@@ -17,7 +17,6 @@ from django.urls import path, include, re_path
 from users.views import *
 from timetable.views import *
 from marks.views import *
-from rest_framework import routers 
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 
@@ -29,7 +28,7 @@ urlpatterns = [
     path('classes', include('timetable.urls.subjectclass')),
     path('directions', include('timetable.urls.direction')),
     path('ceils', include('marks.urls')),
-    path('api/v1/auth/', include('djoser.urls')),       
+    path('auth/', include('djoser.urls')),       
     re_path(r'^auth/', include('djoser.urls.authtoken')),
     path('api/v1/swagger/', SpectacularSwaggerView.as_view(url_name="schema")),
     path('api/v1/schema/', SpectacularAPIView.as_view(), name="schema"),

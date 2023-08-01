@@ -15,7 +15,8 @@ from marks.serializers import CeilSerializer
 from .models import *
 from .serializers import StudentProfileSerializer, TeacherProfileSerializer, PlatoonSerializer, UserSerializer
 from timetable.serializers import *
-from timetable.services import get_classes_by_platoon_and_subject, get_subject, get_subject_classes_for_teacher, get_subject_for_student, get_timetable_for_teacher
+from timetable.services import get_classes_by_platoon_and_subject, get_subject, \
+    get_subject_classes_for_teacher, get_subject_for_student, get_timetable_for_teacher
 
 
 class StudentProfileViewSet(viewsets.ModelViewSet):
@@ -64,7 +65,10 @@ class StudentProfileViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response(MessageResponseSerializer({'success': False, 'message': e}).data, status=500)
 
-    @extend_schema(parameters=[OpenApiParameter("subj_id", OpenApiTypes.NUMBER, OpenApiParameter.QUERY, description="group id for operation selection by group")])
+    @extend_schema(parameters=[OpenApiParameter("subj_id", 
+                                                OpenApiTypes.NUMBER, 
+                                                OpenApiParameter.QUERY, 
+                                                description="group id for operation selection by group")])
     @action(methods=['get'], detail=True)
     def marks(self, request, pk): 
         student = get_student(pk);
