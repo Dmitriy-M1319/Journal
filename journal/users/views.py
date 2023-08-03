@@ -5,7 +5,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import permissions
 
-from .services.platoon import *
+from .services.platoon import get_students_by_platoon, create_timetable_for_platoon
 from .services.teacher import * 
 from .services.student import *
 from utils.serializers import MessageResponseSerializer
@@ -125,14 +125,12 @@ class TeacherProfileViewSet(viewsets.ModelViewSet):
 
     @action(methods=['get'], detail=False)
     def logins(self, request):
-        logins = User.objects.all()
-        serializer = UserSerializer(logins, many=True)
+        serializer = UserSerializer(User.objects.all(), many=True)
         return Response(serializer.data)
 
     @action(methods=['get'], detail=False)
     def teacher_profile(self, request):
-        user = self.request.user
-        serializer = TeacherProfileSerializer(user.teacherprofile)
+        serializer = TeacherProfileSerializer(self.request.user.teacherprofile)
         return Response(serializer.data)
 
     @action(methods=['get'], detail=True)
@@ -190,13 +188,11 @@ class PlatoonViewSet(viewsets.ModelViewSet):
 
     @action(methods=['get'], detail=True)
     def count(self, request, pk):
-        count = len(get_students_by_platoon(pk))
-        return Response({'count': count})
+        return Response({'count': len(get_students_by_platoon(pk))})
 
     @action(methods=['get'], detail=True)
     def timetable(self, request, pk):
-        timetable = create_timetable_for_platoon(pk) 
-        return Response(timetable)
+        return Response(create_timetable_for_platoon(pk))
 
     @action(methods=['get'], detail=True)
     def classes(self, request, pk):
@@ -214,6 +210,5 @@ class PlatoonViewSet(viewsets.ModelViewSet):
         ])
     @action(methods=['get'], detail=True)
     def journal(self, request, pk):
-        subj_id = request.GET.get('subj_id')
-        ceils = get_ceils_by_platoon_and_subject(subj_id, pk)
+        ceils = get_ceils_by_platoon_and_subject(request.GET.get('subj_id'), pk)
         return Response(ceils)

@@ -1,7 +1,7 @@
 """
 Модуль бизнес-логики для сущности студента
 """
-from journal.users.serializers import StudentCreateSerializer
+from users.serializers import StudentCreateSerializer
 
 from users.models import StudentProfile
 

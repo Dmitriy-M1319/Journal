@@ -2,12 +2,11 @@ from django.db import models
 from users.models import TeacherProfile, Platoon, CourseDirection
 
 
-# Модель предмета
 class Subject(models.Model):
-    teacher = models.ForeignKey(TeacherProfile, on_delete = models.CASCADE)
-    name = models.CharField(max_length=100)
+    teacher = models.ForeignKey(TeacherProfile, on_delete = models.DO_NOTHING)
+    name = models.TextField()
     hours_count = models.IntegerField()
-    form = models.CharField(max_length=15)
+    form = models.TextChoices('экзамен', 'зачет')
 
     class Meta:
         db_table = 'subjects'
@@ -18,11 +17,11 @@ class SubjectClass(models.Model):
     platoon = models.ForeignKey(Platoon, on_delete = models.DO_NOTHING)
     class_date = models.DateTimeField()
     theme_number = models.IntegerField()
-    theme_name = models.CharField(max_length=255)
+    theme_name = models.TextField()
     class_number = models.IntegerField()
-    class_name = models.CharField(max_length=255)
-    class_type = models.CharField(max_length=30)
-    classroom = models.CharField(max_length=10)
+    class_name = models.TextField()
+    class_type = models.TextField()
+    classroom = models.CharField(max_length=4)
 
     class Meta:
         db_table = 'subject_classes'
@@ -35,3 +34,4 @@ class DirectionsSubjects(models.Model):
     class Meta:
         unique_together = (('course_direction'), ('subject'))
         db_table = 'directions_subjects'
+

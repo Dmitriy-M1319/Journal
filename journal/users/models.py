@@ -45,6 +45,7 @@ class Platoon(models.Model):
     status = models.CharField(max_length=15)
     course = models.ForeignKey(CourseDirection, on_delete=models.DO_NOTHING, null=True)
     study_day = models.IntegerField();
+
     class Meta:
         db_table = 'platoons'
 
