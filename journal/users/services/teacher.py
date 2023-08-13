@@ -19,7 +19,7 @@ _military_ranks = {
 
 def get_teacher(teacher_id: int) -> TeacherProfile:
     try:
-          return TeacherProfile.objects.get(pk=teacher_id)
+        return TeacherProfile.objects.get(pk=teacher_id)
     except Exception:
         raise ValueError("Такого преподавателя не существует в базе")
 

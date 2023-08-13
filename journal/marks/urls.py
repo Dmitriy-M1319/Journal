@@ -1,10 +1,10 @@
 from rest_framework.routers import SimpleRouter
 
-from marks.views import CeilViewSet
+from marks.views import JournalCeilViewSet
 
 
 router = SimpleRouter()
-router.register(r'^', CeilViewSet)
+router.register(r'^', JournalCeilViewSet)
 
 urlpatterns = []
 

@@ -1,10 +1,10 @@
 """
 Модуль, предоставляющий сервисы для работы с расписанием и занятиями
 """
-
 from datetime import date
 
-from django.db.models import QuerySet
+from django.db.models import ObjectDoesNotExist, QuerySet
+
 from users.models import Platoon, StudentProfile, TeacherProfile 
 from .serializers import SubjectClassSerializer, SubjectCreateSerializer
 from .models import DirectionsSubjects, SubjectClass, Subject
@@ -24,11 +24,11 @@ def get_classes_by_platoon_and_subject(platoon: Platoon, subject: Subject):
         
 
 def get_subject(subject_id) -> Subject:
-    subject = Subject.objects.get(id=subject_id)
-    if not subject:
-        raise ValueError("Такого предмета не существует в базе")
-    else:
+    try:
+        subject = Subject.objects.get(id=subject_id)
         return subject
+    except ObjectDoesNotExist:
+        raise ValueError("Такого предмета не существует в базе")
 
 
 def create_subject(data: dict) -> Subject:
@@ -38,8 +38,7 @@ def create_subject(data: dict) -> Subject:
 
     
 def get_subject_for_student(student: StudentProfile) -> list[Subject]:
-    course = student.platoon.course
-    dir_subjs = DirectionsSubjects.objects.filter(course_direction=course)
+    dir_subjs = DirectionsSubjects.objects.filter(course_direction=student.platoon.course)
     subjects = list()
     for ds in dir_subjs:
         subjects.append(ds.subject)
@@ -47,11 +46,11 @@ def get_subject_for_student(student: StudentProfile) -> list[Subject]:
 
 
 def get_subject_class(id) -> SubjectClass:
-    subject_class = SubjectClass.objects.get(id=id)
-    if not subject_class:
-        raise ValueError("Такого занятия не существует в базе")
-    else:
+    try:
+        subject_class = SubjectClass.objects.get(id=id)
         return subject_class
+    except ObjectDoesNotExist:
+        raise ValueError("Такого занятия не существует в базе")
 
 
 def get_subject_classes_by_subject(subject_id) -> QuerySet:

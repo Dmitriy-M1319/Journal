@@ -19,7 +19,7 @@ class StudentCreateSerializer(serializers.Serializer):
     platoon = serializers.IntegerField()
     department = serializers.CharField(max_length=255, required=False)
     group_number = serializers.IntegerField(required=False)
-    order_of_expulsion = serializers.CharField(max_length=255, required=False)
+    order_of_expulsion = serializers.CharField(required=False, allow_blank=True)
     marital_status = serializers.CharField(max_length=30, required=False)
     address = serializers.CharField(max_length=255, required=False)
     phone_number = serializers.CharField(max_length=11, required=False)
@@ -32,7 +32,7 @@ class StudentCreateSerializer(serializers.Serializer):
         result_data = validated_data
         result_data['user'] = user
         result_data['platoon'] = platoon
-        return StudentProfile(**result_data)
+        return StudentProfile.objects.create(**result_data)
 
     def update(self, instance, validated_data):
         user = User.objects.get(pk=validated_data.get('user', 
@@ -54,6 +54,8 @@ class StudentCreateSerializer(serializers.Serializer):
         instance.phone_number = validated_data.get('phone_number', instance.phone_number)
         instance.public_load = validated_data.get('public_load', instance.public_load)
         instance.sports_category = validated_data.get('sports_category', instance.sports_category)
+        instance.save()
+        return instance
     
     def validate_military_post(self, value):
         _military_posts = ['студент', 'командир взвода']

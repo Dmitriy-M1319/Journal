@@ -4,7 +4,11 @@
 import re
 import datetime
 from datetime import date
+from django.core.handlers.base import transaction
+
 from django.core.serializers.json import json
+from django.db.backends.utils import functools
+from rest_framework.response import Response
 
 
 _date_pattern = r'\d{4}-\d{2}-\d{2}'
@@ -62,3 +66,17 @@ def get_date_and_time_from_str(date_time: str) -> datetime.datetime:
                              local_date.day, 
                              int(time_lst[0]), 
                              int(time_lst[1]))
+
+
+
+def base_exception(status_code=400):
+    def exception_decorator(func):
+        @functools.wraps(func)
+        def instance(request, *args, **kwargs):
+            try:
+                with transaction.atomic():
+                    return func(request, *args, **kwargs)
+            except Exception as e:
+                return Response({'detail': e}, status=status_code)
+        return instance
+    return exception_decorator

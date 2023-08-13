@@ -1,8 +1,12 @@
 from rest_framework import viewsets
+from rest_framework import permissions
+
 from marks.models import JournalCeil
-from marks.serializers import CeilSerializer
+from marks.serializers import JournalCeilSerializer
 
 
-class CeilViewSet(viewsets.ModelViewSet):
+class JournalCeilViewSet(viewsets.ModelViewSet):
     queryset = JournalCeil.objects.all()
-    serializer_class = CeilSerializer
+    serializer_class = JournalCeilSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+

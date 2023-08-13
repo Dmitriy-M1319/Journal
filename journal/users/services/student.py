@@ -28,6 +28,6 @@ def update_existing_student(student_data: dict, student_id: int) -> StudentProfi
 
 
 def expulse_student(student_id) -> None:
-    student = get_student(id)
+    student = get_student(student_id)
     student.status = 'отчислен'
     student.save()
