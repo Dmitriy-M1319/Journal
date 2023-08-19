@@ -63,3 +63,4 @@ class CourseDirectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = CourseDirection
         fields = ('__all__')
+

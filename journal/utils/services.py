@@ -4,8 +4,8 @@
 import re
 import datetime
 from datetime import date
-from django.core.handlers.base import transaction
 
+from django.core.handlers.base import transaction
 from django.core.serializers.json import json
 from django.db.backends.utils import functools
 from rest_framework.response import Response
@@ -70,6 +70,9 @@ def get_date_and_time_from_str(date_time: str) -> datetime.datetime:
 
 
 def base_exception(status_code=400):
+    """
+    Декоратор для обработки исключения получения ошибки из сервисов
+    """
     def exception_decorator(func):
         @functools.wraps(func)
         def instance(request, *args, **kwargs):

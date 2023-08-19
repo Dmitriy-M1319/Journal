@@ -93,14 +93,14 @@ DATABASES = {
 
 # Database settings for PostgreSQL
 #DATABASES = {
-#    'default': {
-#        'ENGINE': 'django.db.backends.postgresql',
-#        'NAME': 'mydatabase',
-#        'USER': 'mydatabaseuser',
-#        'PASSWORD': 'mypassword',
-#        'HOST': '127.0.0.1',
-#        'PORT': '5432',
-#    }
+#    'default': {
+#        'ENGINE': 'django.db.backends.postgresql',
+#        'NAME': 'journal',
+#        'USER': 'postgres',
+#        'PASSWORD': '12345',
+#        'HOST': '127.0.0.1',
+#        'PORT': '5432',
+#    }
 #}
 
 
@@ -145,6 +145,16 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.memcached.PyMemcacheCache',
+        'LOCATION': '127.0.0.1:11211',
+    }
+}
+
+# Caching time
+CACHE_TIME = 5
+
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
@@ -161,6 +171,7 @@ REST_FRAMEWORK = {
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Journal',
 }
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.1/topics/i18n/

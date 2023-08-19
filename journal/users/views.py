@@ -1,4 +1,6 @@
-from django.http.response import responses
+from django.conf import settings
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import viewsets, status
@@ -16,8 +18,9 @@ from marks.serializers import JournalCeilSerializer
 from .models import *
 from .serializers import StudentProfileSerializer, TeacherProfileSerializer, PlatoonSerializer, UserSerializer
 from timetable.serializers import *
-from timetable.services import get_classes_by_platoon_and_subject, get_subject, \
-    get_subject_classes_for_teacher, get_subject_for_student, get_timetable_for_teacher
+from timetable.services import get_classes_by_platoon_and_subject, get_classes_dates_by_teacher_and_year, get_subject, \
+    get_subject_classes_for_teacher, get_subject_for_student, get_timetable_for_teacher, \
+    get_classes_dates_by_teacher_and_year, get_timetable_for_teacher_by_day
 
 
 class StudentProfileViewSet(viewsets.ModelViewSet):
@@ -47,12 +50,14 @@ class StudentProfileViewSet(viewsets.ModelViewSet):
     def expulse(self, request, pk=None):
         expulse_student(pk)
 
+    @method_decorator(cache_page(settings.CACHE_TIME))
     @action(methods=['get'], detail=False)
     def student_profile(self, request):
         user = self.request.user
         serializer = StudentProfileSerializer(user.studentprofile)
         return Response(serializer.data)
 
+    @method_decorator(cache_page(settings.CACHE_TIME))
     @base_exception(status_code=404)
     @action(methods=['get'], detail=True)
     def platoon(self, request, pk):
@@ -60,6 +65,7 @@ class StudentProfileViewSet(viewsets.ModelViewSet):
         serializer = PlatoonSerializer(student.platoon)
         return Response(serializer.data)
 
+    @method_decorator(cache_page(settings.CACHE_TIME))
     @extend_schema(parameters=[OpenApiParameter("subj_id", OpenApiTypes.NUMBER, OpenApiParameter.QUERY, 
                                                 description="group id for operation selection by group")])
     @base_exception(status_code=404)
@@ -71,6 +77,7 @@ class StudentProfileViewSet(viewsets.ModelViewSet):
         serializer = JournalCeilSerializer(ceils, many=True)
         return Response(serializer.data)
 
+    @method_decorator(cache_page(settings.CACHE_TIME))
     @base_exception(status_code=404)
     @action(methods=['get'], detail=True)
     def subjects(self, request, pk):
@@ -108,28 +115,38 @@ class TeacherProfileViewSet(viewsets.ModelViewSet):
     def dismiss(self, request, pk=None):
         dismiss_teacher(pk)
 
+    @method_decorator(cache_page(settings.CACHE_TIME))
     @action(methods=['get'], detail=False)
     def logins(self, request):
         serializer = UserSerializer(User.objects.all(), many=True)
         return Response(serializer.data)
 
+    @method_decorator(cache_page(settings.CACHE_TIME))
     @action(methods=['get'], detail=False)
     def teacher_profile(self, request):
         serializer = TeacherProfileSerializer(self.request.user.teacherprofile)
         return Response(serializer.data)
 
     @base_exception(status_code=404)
+    @method_decorator(cache_page(settings.CACHE_TIME))
     @action(methods=['get'], detail=True)
     def subjects(self, request, pk):
         teacher = get_teacher(pk)
         subjects = teacher.subject_set.all()
         return Response(SubjectSerializer(subjects, many=True).data)
 
+    @extend_schema(parameters=[
+            OpenApiParameter("day", OpenApiTypes.DATE, OpenApiParameter.QUERY, 
+                             description="День, для которого будут отобраны занятия")
+        ])
     @base_exception(status_code=404)
+    @method_decorator(cache_page(settings.CACHE_TIME))
     @action(methods=['get'], detail=True)
     def timetable(self, request, pk):
         teacher = get_teacher(pk)
-        result = get_timetable_for_teacher(teacher)
+        from datetime import datetime
+        day = datetime.strptime(request.GET.get('day'), '%Y-%m-%d')
+        result = get_timetable_for_teacher_by_day(teacher, day)
         return Response(result)
 
     @extend_schema(parameters=[
@@ -137,6 +154,7 @@ class TeacherProfileViewSet(viewsets.ModelViewSet):
                              description="Идентификатор предмета, по которому будет получен список занятий")
         ])
     @base_exception(status_code=404)
+    @method_decorator(cache_page(settings.CACHE_TIME))
     @action(methods=['get'], detail=True)
     def classes(self, request, pk):
             teacher = get_teacher(pk)
@@ -144,12 +162,23 @@ class TeacherProfileViewSet(viewsets.ModelViewSet):
             serializer = SubjectClassSerializer(subject_classes, many=True)
             return Response(serializer.data)
 
+    @extend_schema(parameters=[
+            OpenApiParameter("year", OpenApiTypes.NUMBER, OpenApiParameter.QUERY, 
+                             description="Год, по которому будут получены даты занятия")
+        ])
+    @action(methods=['get'], detail=True)
+    def classes_dates(self, request, pk):
+        teacher = get_teacher(pk)
+        dates = get_classes_dates_by_teacher_and_year(request.GET.get('year'), teacher)
+        return Response(dates)
+
 
 class PlatoonViewSet(viewsets.ModelViewSet):
     queryset = Platoon.objects.all()
     serializer_class = PlatoonSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
+    @method_decorator(cache_page(settings.CACHE_TIME))
     @action(methods=['get'], detail=True)
     def students(self, request, pk):
         students = get_students_by_platoon(pk)
@@ -157,6 +186,7 @@ class PlatoonViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     @base_exception(status_code=404)
+    @method_decorator(cache_page(settings.CACHE_TIME))
     @action(methods=['get'], detail=True)
     def tutor(self, request, pk):
         platoon = get_platoon_by_number(pk)
@@ -164,6 +194,7 @@ class PlatoonViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     @base_exception(status_code=404)
+    @method_decorator(cache_page(settings.CACHE_TIME))
     @action(methods=['get'], detail=True)
     def commander(self, request, pk):
         commander = get_students_by_platoon(pk).get(military_post='командир взвода')
@@ -171,16 +202,19 @@ class PlatoonViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     @base_exception(status_code=404)
+    @method_decorator(cache_page(settings.CACHE_TIME))
     @action(methods=['get'], detail=True)
     def count(self, request, pk):
         return Response({'count': len(get_students_by_platoon(pk))})
 
     @base_exception(status_code=404)
+    @method_decorator(cache_page(settings.CACHE_TIME))
     @action(methods=['get'], detail=True)
     def timetable(self, request, pk):
         return Response(create_timetable_for_platoon(pk))
 
     @base_exception(status_code=404)
+    @method_decorator(cache_page(settings.CACHE_TIME))
     @action(methods=['get'], detail=True)
     def classes(self, request, pk):
         platoon = get_platoon_by_number(pk)
@@ -194,6 +228,7 @@ class PlatoonViewSet(viewsets.ModelViewSet):
                              description="Идентификатор предмета, по которому будет получен список оценок")
         ])
     @base_exception(status_code=404)
+    @method_decorator(cache_page(settings.CACHE_TIME))
     @action(methods=['get'], detail=True)
     def journal(self, request, pk):
         platoon = get_platoon_by_number(pk)

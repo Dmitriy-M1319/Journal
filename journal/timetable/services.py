@@ -65,9 +65,12 @@ def get_subject_classes_for_teacher(teacher: TeacherProfile, subject_id: int):
     return subject.subjectclass_set.all()
 
 
-def get_timetable_for_teacher(teacher: TeacherProfile): 
+def get_timetable_for_teacher_by_day(teacher: TeacherProfile, day: date):
     subjects = Subject.objects.filter(teacher=teacher)
-    classes = SubjectClass.objects.filter(subject__in=subjects)
+    classes = SubjectClass.objects.filter(subject__in=subjects,
+                                          class_date__day=day.day,
+                                          class_date__month=day.month,
+                                          class_date__year=day.year).order_by('class_date')
     dates = dict()
     for cl in classes:
         date_str = cl.class_date.strftime('%d.%m.%Y')
@@ -78,3 +81,16 @@ def get_timetable_for_teacher(teacher: TeacherProfile):
     for key in dates:
         result.append({'date': key, 'classes': SubjectClassSerializer(dates[key], many=True).data})
     return result
+
+
+def get_classes_dates_by_teacher_and_year(year, teacher: TeacherProfile):
+    ''' Получить список дней по месяцам в определенном году, 
+    в которые у преподавателя есть занятия'''
+    subjects = Subject.objects.filter(teacher=teacher)
+    classes = SubjectClass.objects.filter(subject__in=subjects)
+    result = {'dates': list()}
+    for month in range(1, 13):
+        these_subjects = classes.filter(class_date__month=month) & classes.filter(class_date__year=year)
+        result['dates'].append({'month': month, 'days': these_subjects.values_list('class_date__day', flat=True)})
+    return result
+
