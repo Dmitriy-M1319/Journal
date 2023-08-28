@@ -20,7 +20,15 @@ def get_journal_ceil(journal_id):
         raise ValueError('Такой ячейки не существует')
 
 
+def check_direction(subject: Subject, platoon: Platoon):
+    dir_list = DirectionsSubjects.objects.filter(course_direction=platoon.course)
+    subjects = Subject.objects.filter(id__in=dir_list.values('subject_id'))
+    return subjects.contains(subject)
+
+
 def get_ceils_by_platoon_and_subject(subject: Subject, platoon: Platoon) -> list:
+    if not check_direction(subject, platoon):
+        raise Exception('Данный предмет не входит в программу обучения взвода')
     students = get_students_by_platoon(platoon.platoon_number)
     platoon_classes = get_classes_by_platoon_and_subject(platoon, subject)
     ceils = list()

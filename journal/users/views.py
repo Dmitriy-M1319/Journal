@@ -19,7 +19,7 @@ from .models import *
 from .serializers import StudentProfileSerializer, TeacherProfileSerializer, PlatoonSerializer, UserSerializer
 from timetable.serializers import *
 from timetable.services import get_classes_by_platoon_and_subject, get_classes_dates_by_teacher_and_year, get_subject, \
-    get_subject_classes_for_teacher, get_subject_for_student, get_timetable_for_teacher, \
+    get_subject_classes_for_teacher, get_subject_for_student, \
     get_classes_dates_by_teacher_and_year, get_timetable_for_teacher_by_day
 
 
@@ -224,7 +224,7 @@ class PlatoonViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     @extend_schema(parameters=[
-            OpenApiParameter("subj_id", OpenApiTypes.UUID, OpenApiParameter.QUERY, 
+            OpenApiParameter("subj_id", OpenApiTypes.NUMBER, OpenApiParameter.QUERY, 
                              description="Идентификатор предмета, по которому будет получен список оценок")
         ])
     @base_exception(status_code=404)

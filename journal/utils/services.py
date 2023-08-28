@@ -80,6 +80,6 @@ def base_exception(status_code=400):
                 with transaction.atomic():
                     return func(request, *args, **kwargs)
             except Exception as e:
-                return Response({'detail': e}, status=status_code)
+                return Response({'detail': e.__str__()}, status=status_code)
         return instance
     return exception_decorator

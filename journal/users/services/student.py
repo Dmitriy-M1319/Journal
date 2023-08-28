@@ -1,6 +1,7 @@
 """
 Модуль бизнес-логики для сущности студента
 """
+from users.services.platoon import get_students_by_platoon
 from users.serializers import StudentCreateSerializer
 
 from users.models import StudentProfile
@@ -15,6 +16,9 @@ def get_student(student_id: int) -> StudentProfile:
 
 
 def add_new_student_to_db(student_data: dict) -> StudentProfile:
+    if student_data['military_post'] == 'командир взвода' and \
+            get_students_by_platoon(student_data['platoon']).get(military_post='командир взвода') != None:
+                raise Exception('Командир взвода в данном взводе уже существует')
     serializer = StudentCreateSerializer(data=student_data)
     serializer.is_valid(raise_exception=True)
     return serializer.save()

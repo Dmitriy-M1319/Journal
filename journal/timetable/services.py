@@ -20,7 +20,7 @@ def get_platoon_timetable_on_day(platoon: Platoon, local_day: date):
 
 
 def get_classes_by_platoon_and_subject(platoon: Platoon, subject: Subject):
-     return SubjectClass.objects.filter(platoon=platoon, subject=subject)
+     return SubjectClass.objects.filter(platoon=platoon, subject=subject).order_by('class_date')
         
 
 def get_subject(subject_id) -> Subject:
