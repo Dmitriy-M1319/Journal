@@ -23,16 +23,16 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('students', include('users.urls.student')),
-    path('teachers', include('users.urls.teacher')),
-    path('platoons', include('users.urls.platoon')),
-    path('subjects', include('timetable.urls.subject')),
-    path('classes', include('timetable.urls.subjectclass')),
-    path('directions', include('timetable.urls.direction')),
-    path('ceils', include('marks.urls')),
-    path('auth/', include('djoser.urls')),       
-    re_path(r'^auth/', include('djoser.urls.authtoken')),
+    path('api/v1/admin/', admin.site.urls),
+    path('api/v1/students', include('users.urls.student')),
+    path('api/v1/teachers', include('users.urls.teacher')),
+    path('api/v1/platoons', include('users.urls.platoon')),
+    path('api/v1/subjects', include('timetable.urls.subject')),
+    path('api/v1/classes', include('timetable.urls.subjectclass')),
+    path('api/v1/directions', include('timetable.urls.direction')),
+    path('api/v1/ceils', include('marks.urls')),
+    path('api/v1/auth/', include('djoser.urls')),       
+    re_path(r'^api/v1/auth/', include('djoser.urls.authtoken')),
     path('api/v1/swagger/', SpectacularSwaggerView.as_view(url_name="schema")),
     path('api/v1/schema/', SpectacularAPIView.as_view(), name="schema"),
 ]
