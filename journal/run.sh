@@ -1,5 +1,6 @@
 #!/bin/bash
 
+export DJANGO_SETTINGS_MODULE=settings.prod_settings 
 python ./manage.py migrate
 python ./manage.py test
 python ./manage.py collectstatic --noinput
